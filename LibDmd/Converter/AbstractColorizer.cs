@@ -46,12 +46,12 @@ namespace LibDmd.Converter
 
 		protected abstract int BitLength { get; }
 		protected readonly Coloring Coloring;
-		protected readonly Animation[] Animations;
+		protected readonly FrameSequence[] Animations;
 		protected byte[] ColoredFrame;
 		protected readonly BehaviorSubject<Palette> Palette = new BehaviorSubject<Palette>(new Palette(new[]{Colors.Black, Colors.Cyan}));
 
-		protected Animation CurrentAnimation;
-		protected Animation CurrentEnhancer;
+		protected FrameSequence CurrentAnimation;
+		protected FrameSequence CurrentEnhancer;
 		protected readonly Subject<Tuple<byte[][], Color[]>> ColoredGray2AnimationFrames = new Subject<Tuple<byte[][], Color[]>>();
 		protected readonly Subject<Tuple<byte[][], Color[]>> ColoredGray4AnimationFrames = new Subject<Tuple<byte[][], Color[]>>();
 		protected readonly Subject<byte[]> Rgb24AnimationFrames = new Subject<byte[]>();
@@ -67,7 +67,7 @@ namespace LibDmd.Converter
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		protected AbstractColorizer(Coloring coloring, Animation[] animations)
+		protected AbstractColorizer(Coloring coloring, FrameSequence[] animations)
 		{
 			Coloring = coloring;
 			Animations = animations;
@@ -133,7 +133,7 @@ namespace LibDmd.Converter
 			}
 
 			// Sisch wird än Animazion wird losgla
-			var animation = Animation.Find(Animations, mapping.Duration);
+			var animation = FrameSequence.Find(Animations, mapping.Duration);
 			if (animation == null) {
 				Logger.Warn("[colorize] No animation found at position {0} for {1} frame.", mapping.Duration, masked);
 				return false;

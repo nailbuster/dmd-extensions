@@ -104,7 +104,7 @@ namespace LibDmd.Input.PinballFX
 		public IObservable<Tuple<byte[][], Color[]>> GetColoredGray2Frames()
 		{
 			double lastHue = 0;
-			Color[] palette = null;
+			Color[] palette = { Colors.Yellow, Colors.Orange, Colors.Red, Colors.Blue };
 
 			if (_framesColoredGray2 == null) {
 				var gridProcessor = new GridProcessor { Spacing = 1d };
@@ -117,13 +117,13 @@ namespace LibDmd.Input.PinballFX
 					.Select(bmp => {
 						double hue;
 						var frame = ImageUtil.ConvertToGray2(bmp, 3, out hue);
-						if (palette == null || Math.Abs(hue - lastHue) > 0.01) {
+						/*if (palette == null || Math.Abs(hue - lastHue) > 0.01) {
 							byte r, g, b;
 							ColorUtil.HslToRgb(hue, 1, 0.5, out r, out g, out b);
 							var color = Color.FromRgb(r, g, b);
 							palette = ColorUtil.GetPalette(new[]{ Colors.Black, color }, 4);
 							lastHue = hue;
-						}
+						}*/
 						return new Tuple<byte[][], Color[]>(FrameUtil.Split(bmp.PixelWidth, bmp.PixelHeight, 2, frame), palette);
 					})
 					.Publish();

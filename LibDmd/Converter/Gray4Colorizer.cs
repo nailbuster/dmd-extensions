@@ -21,7 +21,7 @@ namespace LibDmd.Converter
 		protected override int BitLength { get; } = 4;
 		public FrameFormat From { get; } = FrameFormat.Gray4;
 
-		public Gray4Colorizer(Coloring coloring, Animation[] animations = null) : base(coloring, animations)
+		public Gray4Colorizer(Coloring coloring, FrameSequence[] animations = null) : base(coloring, animations)
 		{
 		}
 
