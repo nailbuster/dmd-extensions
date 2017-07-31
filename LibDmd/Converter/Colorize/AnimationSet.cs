@@ -15,6 +15,8 @@ namespace LibDmd.Converter.Colorize
 		public readonly int Version;
 		public readonly List<Animation> Animations;
 
+		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
 		public AnimationSet(string filename)
 		{
 			var fs = new FileStream(filename, FileMode.Open);
@@ -33,6 +35,7 @@ namespace LibDmd.Converter.Colorize
 			var numAnimations = reader.ReadInt16BE();
 
 			Animations = new List<Animation>(numAnimations);
+			Logger.Trace("Reading {0} animations...", numAnimations);
 			for (var i = 0; i < numAnimations; i++) {
 				Animations.Add(new Animation(reader));
 			}

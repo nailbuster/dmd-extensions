@@ -46,9 +46,10 @@ namespace LibDmd.Converter.Colorize
 			_type = reader.ReadByte();
 			_fskTag = reader.ReadByte();
 
-			int numFrameSets = reader.ReadInt16BE();
-			Frames = new List<AnimationFrame>(numFrameSets);
-			for (var i = 0; i < numFrameSets; i++) {
+			int numFrames = reader.ReadInt16BE();
+			Logger.Trace("Reading {0} frames...", numFrames);
+			Frames = new List<AnimationFrame>(numFrames);
+			for (var i = 0; i < numFrames; i++) {
 				Frames.Add(new AnimationFrame(reader));
 			}
 		}
