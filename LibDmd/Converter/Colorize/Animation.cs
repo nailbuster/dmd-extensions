@@ -32,7 +32,7 @@ namespace LibDmd.Converter.Colorize
 		{
 			// animations name
 			var nameLength = reader.ReadInt16BE();
-			Name = nameLength > 0 ? Encoding.UTF8.GetString(reader.ReadBytes(nameLength - 2)) : "<undefined>";
+			Name = nameLength > 0 ? Encoding.UTF8.GetString(reader.ReadBytes(nameLength)) : "<undefined>";
 
 			// other data
 			_cycles = reader.ReadInt16BE();
