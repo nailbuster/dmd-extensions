@@ -10,7 +10,6 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.TextFormatting;
 using System.Windows.Threading;
 using LibDmd.Common;
 using LibDmd.Converter;
