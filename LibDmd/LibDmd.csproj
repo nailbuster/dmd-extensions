@@ -152,6 +152,10 @@
   <ItemGroup>
     <Compile Include="Common\ColorUtil.cs" />
     <Compile Include="Common\FrameUtil.cs" />
+    <Compile Include="Common\HeatShrink\HeatShrinkDecoder.cs" />
+    <Compile Include="Common\HeatShrink\HeatShrinkEncoder.cs" />
+    <Compile Include="Common\HeatShrink\OutputInfo.cs" />
+    <Compile Include="Common\HeatShrink\Result.cs" />
     <Compile Include="Common\ImageUtil.cs" />
     <Compile Include="Common\InteropUtil.cs" />
     <Compile Include="Common\TransformationUtil.cs" />
