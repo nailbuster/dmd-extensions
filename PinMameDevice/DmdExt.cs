@@ -114,28 +114,29 @@ namespace PinMameDevice
 				
 				var palPath = File.Exists(palPath1) ? palPath1 : palPath2;
 				var fsqPath = File.Exists(fsqPath1) ? fsqPath1 : fsqPath2;
-				var fniPath = File.Exists(vniPath1) ? vniPath1 : vniPath2;
+				var vniPath = File.Exists(vniPath1) ? vniPath1 : vniPath2;
 
 				if (File.Exists(palPath)) {
 					try {
 						Logger.Info("Loading palette file at {0}...", palPath);
 						var coloring = new Coloring(palPath);
-						FrameSequence[] animations = null;
 
-						if (File.Exists(fsqPath)) {
-							Logger.Info("Loading animation file at {0}...", fsqPath);
-							animations = FrameSequence.ReadFrameSequence(fsqPath);
-						}
-						if (File.Exists(fniPath)) {
-							Logger.Info("Loading virtual animation file at {0}...", fniPath);
-							var a = new AnimationSet(fniPath);
-							Logger.Info("Loaded animation set {0}", a);
-							foreach (Animation animation in a.Animations) {
+						if (File.Exists(vniPath)) {
+							Logger.Info("Loading virtual animation file at {0}...", vniPath);
+							var vni = new AnimationSet(vniPath);
+							Logger.Info("Loaded animation set {0}", vni);
+							foreach (var animation in vni.Animations) {
 								Logger.Info("Loaded animation {0}", animation);
 							}
+							_gray2Colorizer = new Gray2Colorizer(coloring, vni);
+							_gray4Colorizer = new Gray4Colorizer(coloring, vni);
+
+						} else if (File.Exists(fsqPath)) {
+							Logger.Info("Loading animation file at {0}...", fsqPath);
+							var fsq = FrameSequence.ReadFrameSequence(fsqPath);
+							_gray2Colorizer = new Gray2Colorizer(coloring, fsq);
+							_gray4Colorizer = new Gray4Colorizer(coloring, fsq);
 						}
-						_gray2Colorizer = new Gray2Colorizer(coloring, animations);
-						_gray4Colorizer = new Gray4Colorizer(coloring, animations);
 
 					} catch (Exception e) {
 						Logger.Warn(e, "Error initializing colorizer: {0}", e.Message);

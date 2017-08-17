@@ -46,7 +46,8 @@ namespace LibDmd.Converter
 
 		protected abstract int BitLength { get; }
 		protected readonly Coloring Coloring;
-		protected readonly FrameSequence[] Animations;
+		protected readonly FrameSequence[] AnimationsFsq;
+		protected readonly AnimationSet AnimationsVni;
 		protected byte[] ColoredFrame;
 		protected readonly BehaviorSubject<Palette> Palette = new BehaviorSubject<Palette>(new Palette(new[]{Colors.Black, Colors.Cyan}));
 
@@ -67,12 +68,20 @@ namespace LibDmd.Converter
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		protected AbstractColorizer(Coloring coloring, FrameSequence[] animations)
+		protected AbstractColorizer(Coloring coloring, FrameSequence[] animationsFsq)
 		{
 			Coloring = coloring;
-			Animations = animations;
+			AnimationsFsq = animationsFsq;
 			SetPalette(Coloring.DefaultPalette, true);
-			Logger.Debug("[colorize] Initialized.");
+			Logger.Debug("[colorize] Initialized from FSQ.");
+		}
+
+		protected AbstractColorizer(Coloring coloring, AnimationSet animationsVni)
+		{
+			Coloring = coloring;
+			AnimationsVni = animationsVni;
+			SetPalette(Coloring.DefaultPalette, true);
+			Logger.Debug("[colorize] Initialized forom VNI.");
 		}
 
 		public void Init()
@@ -127,13 +136,13 @@ namespace LibDmd.Converter
 				return true;
 			}
 
-			if (Animations == null) {
+			if (AnimationsFsq == null) {
 				Logger.Warn("[colorize] Colorizer does not contain any animations, skipping lookup for position {0}.", mapping.Duration);
 				return false;
 			}
 
 			// Sisch wird än Animazion wird losgla
-			var animation = FrameSequence.Find(Animations, mapping.Duration);
+			var animation = FrameSequence.Find(AnimationsFsq, mapping.Duration);
 			if (animation == null) {
 				Logger.Warn("[colorize] No animation found at position {0} for {1} frame.", mapping.Duration, masked);
 				return false;

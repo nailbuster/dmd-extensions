@@ -11,11 +11,14 @@ using NLog;
 namespace LibDmd.Converter.Colorize
 {
 	/// <summary>
-	/// Animazionsdatä wo entweder än Animazion uisem ROM komplett uistuischid
-	/// odr abr erwiiterid.
+	/// Animazionsdatä fir ächti Flippr wo entweder än Animazion uisem ROM komplett
+	/// uistuischid odr abr erwiiterid.
 	/// </summary>
 	/// 
 	/// <remarks>
+	/// S Format wo iis eigentlich interessiärt ischs <see cref="AnimationSet"/>,
+	/// das wird exklusif fir virtuelli Pins bruicht.
+	/// 
 	/// Än Animazion wird abgschpiut wenns äs Matching git und dr Modus eis odr
 	/// zwei isch.
 	/// 
@@ -200,6 +203,38 @@ namespace LibDmd.Converter.Colorize
 				animations[i] = new FrameSequence(reader);
 			}
 			return animations;
+		}
+	}
+
+	/// <summary>
+	/// Eis Buid wo entweder zum erwiitärä ordr zum ersetzä bruicht wird.
+	/// </summary>
+	public class Frame
+	{
+		public int BitLength => Planes.Length; 
+		public readonly uint Delay;
+		public readonly uint Time;
+		public readonly byte[][] Planes;
+
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+		public Frame(BinaryReader reader, uint time)
+		{
+			Delay = reader.ReadUInt32BE();
+			Time = time;
+			var numPlanes = reader.ReadUInt16BE();
+			var planeSize = reader.ReadUInt16BE();
+			//Logger.Trace("  [{2}] [fsq] Reading {0}-bit frame with {1}-byte planes", numPlanes, planeSize, reader.BaseStream.Position);
+
+			Planes = new byte[numPlanes][];
+			for (var i = 0; i < numPlanes; i++) {
+				Planes[i] = reader.ReadBytes(planeSize);
+			}
+		}
+
+		public byte[] GetFrame(int width, int height)
+		{
+			return FrameUtil.Join(width, height, Planes);
 		}
 	}
 }
