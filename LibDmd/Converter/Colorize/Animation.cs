@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using LibDmd.Common;
 using LibDmd.Common.HeatShrink;
@@ -31,6 +32,9 @@ namespace LibDmd.Converter.Colorize
 		public Color[] AnimationColors { get; private set; }
 		public AnimationEditMode EditMode { get; private set; }
 		public int TransitionFrom { get; }
+
+		public int Width { get; }
+		public int Height { get; }
 
 		public readonly List<AnimationFrame> Frames;
 
@@ -65,8 +69,12 @@ namespace LibDmd.Converter.Colorize
 			if (fileVersion >= 3) {
 				EditMode = (AnimationEditMode)reader.ReadByte();
 			}
+			if (fileVersion >= 4) {
+				Width = reader.ReadInt16BE();
+				Height = reader.ReadInt16BE();
+			}
 
-			Logger.Debug("Reading {0} frames for animation \"{1}\"...", numFrames, Name);
+			Logger.Debug("Reading {0} frame{1} for animation \"{2}\"...", numFrames, numFrames == 1 ? "" : "s", Name);
 			Frames = new List<AnimationFrame>(numFrames);
 			for (var i = 0; i < numFrames; i++) {
 				var frame = new AnimationFrame(reader, fileVersion);
@@ -82,14 +90,13 @@ namespace LibDmd.Converter.Colorize
 			PaletteIndex = reader.ReadInt16BE();
 			var numColors = reader.ReadInt16BE();
 			if (numColors <= 0) {
-				Logger.Debug("No colors for palette {0} found ({1}).", PaletteIndex, numColors);
 				return;
 			}
 			AnimationColors = new Color[numColors];
 			for (var i = 0; i < numColors; i++) {
 				AnimationColors[i] = Color.FromRgb(reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
 			}
-			Logger.Debug("Found {1} colors for palette {0} found.", numColors, PaletteIndex);
+			Logger.Debug("Found {0} colors for palette {1}.", numColors, PaletteIndex);
 		}
 
 		public override string ToString()
@@ -111,6 +118,7 @@ namespace LibDmd.Converter.Colorize
 		public readonly int Delay;
 		public readonly List<AnimationPlane> Planes;
 		public readonly bool HasMask;
+		public readonly byte[] Hash;
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -118,8 +126,12 @@ namespace LibDmd.Converter.Colorize
 		{
 			int planeSize = reader.ReadInt16BE();
 			Delay = reader.ReadInt16BE();
+			if (fileVersion >= 4) {
+				Hash = reader.ReadBytes(4);
+			}
 			int numPlanes = reader.ReadByte();
 			Planes = new List<AnimationPlane>(numPlanes);
+			
 			if (fileVersion < 3) {
 				HasMask = ReadPlanes(reader, numPlanes, planeSize, false);
 
@@ -143,7 +155,7 @@ namespace LibDmd.Converter.Colorize
 
 		private bool ReadPlanes(BinaryReader reader, int numPlanes, int planeSize, bool compressed)
 		{
-			Logger.Debug("Reading {0} {1}planes at {2} bytes for frame...", numPlanes, compressed ? "compressed " : "", planeSize);
+			//Logger.Debug("Reading {0} {1}planes at {2} bytes for frame...", numPlanes, compressed ? "compressed " : "", planeSize);
 			AnimationPlane mask = null;
 			for (var i = 0; i < numPlanes; i++) {
 				var plane = new AnimationPlane(reader, planeSize);
