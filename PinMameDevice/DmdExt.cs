@@ -123,7 +123,7 @@ namespace PinMameDevice
 
 						if (File.Exists(vniPath)) {
 							Logger.Info("Loading virtual animation file at {0}...", vniPath);
-							var vni = new AnimationSet(vniPath);
+							var vni = new VniAnimationSet(vniPath);
 							Logger.Info("Loaded animation set {0}", vni);
 							foreach (var animation in vni.Animations) {
 								Logger.Info("Loaded animation {0}", animation);

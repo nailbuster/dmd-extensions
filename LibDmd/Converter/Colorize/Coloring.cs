@@ -117,7 +117,5 @@ namespace LibDmd.Converter.Colorize
 		{
 			return $"{Path.GetFileName(Filename)}: v{Version}, {Palettes.Length} palette(s), {Mappings.Length} mapping(s), {Masks.Length} mask(s)";
 		}
-
-		
 	}
 }
