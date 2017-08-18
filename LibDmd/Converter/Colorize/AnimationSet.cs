@@ -5,8 +5,8 @@ namespace LibDmd.Converter.Colorize
 {
 	public abstract class AnimationSet
 	{
-		public int Version { get; protected set; }
-		public List<Animation> Animations { get; protected set; }
+		protected int Version;
+		protected List<Animation> Animations;
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

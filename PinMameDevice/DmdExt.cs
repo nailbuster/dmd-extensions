@@ -54,7 +54,7 @@ namespace PinMameDevice
 
 		// Iifärbigsziig
 		private Color[] _palette;
-		private Gray2Colorizer _gray2Colorizer;
+		private NewGray2Colorizer _gray2Colorizer;
 		private Gray4Colorizer _gray4Colorizer;
 
 		// Wärchziig
@@ -125,16 +125,13 @@ namespace PinMameDevice
 							Logger.Info("Loading virtual animation file at {0}...", vniPath);
 							var vni = new VniAnimationSet(vniPath);
 							Logger.Info("Loaded animation set {0}", vni);
-							foreach (var animation in vni.Animations) {
-								Logger.Info("Loaded animation {0}", animation);
-							}
-							_gray2Colorizer = new Gray2Colorizer(coloring, vni);
+							_gray2Colorizer = new NewGray2Colorizer(coloring, vni);
 							_gray4Colorizer = new Gray4Colorizer(coloring, vni);
 
 						} else if (File.Exists(fsqPath)) {
 							Logger.Info("Loading animation file at {0}...", fsqPath);
 							var fsq = FrameSequence.ReadFrameSequence(fsqPath);
-							_gray2Colorizer = new Gray2Colorizer(coloring, fsq);
+							//_gray2Colorizer = new Gray2Colorizer(coloring, fsq);
 							_gray4Colorizer = new Gray4Colorizer(coloring, fsq);
 						}
 

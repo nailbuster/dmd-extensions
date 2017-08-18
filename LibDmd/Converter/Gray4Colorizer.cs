@@ -17,7 +17,7 @@ namespace LibDmd.Converter
 	/// </remarks>
 	public class Gray4Colorizer : AbstractColorizer, IConverter, IColoredGray2Source, IColoredGray4Source
 	{
-		public override string Name { get; } = "4 Bit Colorizer";
+		public override string Name { get; } = "4-Bit Colorizer";
 		protected override int BitLength { get; } = 4;
 		public FrameFormat From { get; } = FrameFormat.Gray4;
 

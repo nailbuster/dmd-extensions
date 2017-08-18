@@ -26,14 +26,14 @@ namespace LibDmd.Converter.Colorize
 			var numAnimations = reader.ReadInt16BE();
 
 			if (Version >= 2) {
-				Logger.Trace("Skipping {0} bytes of animation indexes.", numAnimations * 4);
+				Logger.Trace("VNI[{1}] Skipping {0} bytes of animation indexes.", numAnimations * 4, reader.BaseStream.Position);
 				for (var i = 0; i < numAnimations; i++) {
 					reader.ReadUInt32();
 				}
 			}
 
 			Animations = new List<Animation>(numAnimations);
-			Logger.Debug("Reading {0} animations from {1} v{2}...", numAnimations, header, Version);
+			Logger.Debug("VNI[{3}] Reading {0} animations from {1} v{2}...", numAnimations, header, Version, reader.BaseStream.Position);
 			for (var i = 0; i < numAnimations; i++) {
 				Animations.Add(new VniAnimation(reader, Version));
 			}

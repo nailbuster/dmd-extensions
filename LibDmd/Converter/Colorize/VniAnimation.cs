@@ -48,7 +48,7 @@ namespace LibDmd.Converter.Colorize
 				Height = reader.ReadInt16BE();
 			}
 
-			Logger.Debug("Reading {0} frame{1} for animation \"{2}\"...", numFrames, numFrames == 1 ? "" : "s", Name);
+			Logger.Debug("VNI[{3}] Reading {0} frame{1} for animation \"{2}\"...", numFrames, numFrames == 1 ? "" : "s", Name, reader.BaseStream.Position);
 			Frames = new List<AnimationFrame>(numFrames);
 			for (var i = 0; i < numFrames; i++) {
 				var frame = new VniAnimationFrame(reader, fileVersion);
@@ -70,7 +70,7 @@ namespace LibDmd.Converter.Colorize
 			for (var i = 0; i < numColors; i++) {
 				AnimationColors[i] = Color.FromRgb(reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
 			}
-			Logger.Debug("Found {0} colors for palette {1}.", numColors, PaletteIndex);
+			Logger.Debug("VNI[{2}] Found {0} colors for palette {1}.", numColors, PaletteIndex, reader.BaseStream.Position);
 		}
 
 		public override string ToString()

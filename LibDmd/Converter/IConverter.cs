@@ -19,11 +19,6 @@ namespace LibDmd.Converter
 		FrameFormat From { get; }
 
 		/// <summary>
-		/// Destination bit length
-		/// </summary>
-		//FrameFormat To { get; }
-
-		/// <summary>
 		/// Converts from source to destination
 		/// </summary>
 		/// <param name="from">Source data</param>

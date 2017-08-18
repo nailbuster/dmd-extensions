@@ -149,7 +149,7 @@ namespace LibDmd.Converter
 			}
 
 			// Modus eis: Äs cha si das än Animazion mehrmaus dr gliichi Häsch hat am Aafang, i dem Fau nid looslah.
-			if (mapping.Mode == 1 && (CurrentAnimation == null || checksum != LastChecksum)) {
+			if (mapping.Mode == SwitchMode.Replace && (CurrentAnimation == null || checksum != LastChecksum)) {
 				Logger.Info("[colorize] Playing animation of {0} frames via {1} frame.", animation.NumFrames, masked);
 				CurrentAnimation?.Stop();
 				CurrentEnhancer?.Stop();
@@ -160,7 +160,7 @@ namespace LibDmd.Converter
 			}
 
 			// Modus zwei: Gliichi Kondizionä wiä obä, aber uifäas anders Objäkt
-			if (mapping.Mode == 2 && (CurrentEnhancer == null || checksum != LastChecksum)) {
+			if (mapping.Mode == SwitchMode.ColorMask && (CurrentEnhancer == null || checksum != LastChecksum)) {
 				Logger.Info("[colorize] Enhancing animation of {0} frames via {1} frame.", animation.NumFrames, masked);
 				CurrentAnimation?.Stop();
 				CurrentEnhancer?.Stop();

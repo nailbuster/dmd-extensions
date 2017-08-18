@@ -8,10 +8,12 @@ namespace LibDmd.Converter.Colorize
 		/// <summary>
 		/// Duration of the frame
 		/// </summary>
-		public int Delay { get; protected set; }
+		protected int Delay;
+
 		public List<AnimationPlane> Planes { get; protected set; }
 		public bool HasMask { get; protected set; }
-		public byte[] Hash { get; protected set; }
+
+		protected byte[] Hash;
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 	}
