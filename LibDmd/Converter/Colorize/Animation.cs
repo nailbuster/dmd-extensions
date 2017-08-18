@@ -13,20 +13,6 @@ using NLog;
 
 namespace LibDmd.Converter.Colorize
 {
-	public abstract class AnimationSet
-	{
-		public int Version { get; protected set; }
-		public List<Animation> Animations { get; protected set; }
-
-		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
-		public override string ToString()
-		{
-			return $"VPIN v{Version}, {Animations.Count} animation(s)";
-		}
-	}
-
-
 	public abstract class Animation
 	{
 		public string Name { get; protected set; }
@@ -62,27 +48,5 @@ namespace LibDmd.Converter.Colorize
 	public enum AnimationEditMode
 	{
 		Replace, Mask, Fixed
-	}
-
-	public abstract class AnimationFrame
-	{
-		/// <summary>
-		/// Duration of the frame
-		/// </summary>
-		public int Delay { get; protected set; }
-		public List<AnimationPlane> Planes { get; protected set; }
-		public bool HasMask { get; protected set; }
-		public byte[] Hash { get; protected set; }
-
-		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-	}
-
-	public abstract class AnimationPlane
-	{
-		/// <summary>
-		/// Type of plane
-		/// </summary>
-		public byte Marker { get; protected set; }
-		public byte[] Plane { get; protected set; }
 	}
 }

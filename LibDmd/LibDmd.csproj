@@ -163,9 +163,15 @@
       <DependentUpon>VirtualDmd.xaml</DependentUpon>
     </Compile>
     <Compile Include="Converter\AbstractColorizer.cs" />
+    <Compile Include="Converter\Colorize\AnimationFrame.cs" />
+    <Compile Include="Converter\Colorize\AnimationPlane.cs" />
+    <Compile Include="Converter\Colorize\AnimationSet.cs" />
     <Compile Include="Converter\Colorize\VniAnimation.cs" />
     <Compile Include="Converter\Colorize\Animation.cs" />
     <Compile Include="Converter\Colorize\FrameSequence.cs" />
+    <Compile Include="Converter\Colorize\VniAnimationFrame.cs" />
+    <Compile Include="Converter\Colorize\VniAnimationPlane.cs" />
+    <Compile Include="Converter\Colorize\VniAnimationSet.cs" />
     <Compile Include="Converter\Gray2Colorizer.cs" />
     <Compile Include="Converter\Gray4Colorizer.cs" />
     <Compile Include="Converter\IConverter.cs" />

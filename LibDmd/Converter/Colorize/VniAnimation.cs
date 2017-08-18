@@ -8,52 +8,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using LibDmd.Common;
-using LibDmd.Common.HeatShrink;
-using LibDmd.Input.FileSystem;
 using NLog;
 
 namespace LibDmd.Converter.Colorize
 {
-
-	public class VniAnimationSet : AnimationSet
-	{
-		public VniAnimationSet(string filename)
-		{
-			var fs = new FileStream(filename, FileMode.Open);
-			var reader = new BinaryReader(fs);
-
-			// name
-			var header = Encoding.UTF8.GetString(reader.ReadBytes(4));
-			if (header != "VPIN") {
-				throw new WrongFormatException("Not a VPIN file: " + filename);
-			}
-
-			// version
-			Version = reader.ReadInt16BE();
-
-			// number of animations
-			var numAnimations = reader.ReadInt16BE();
-
-			if (Version >= 2) {
-				Logger.Trace("Skipping {0} bytes of animation indexes.", numAnimations * 4);
-				for (var i = 0; i < numAnimations; i++) {
-					reader.ReadUInt32();
-				}
-			}
-
-			Animations = new List<Animation>(numAnimations);
-			Logger.Debug("Reading {0} animations from {1} v{2}...", numAnimations, header, Version);
-			for (var i = 0; i < numAnimations; i++) {
-				Animations.Add(new VniAnimation(reader, Version));
-			}
-		}
-
-		public override string ToString()
-		{
-			return $"VPIN v{Version}, {Animations.Count} animation(s)";
-		}
-	}
-
 	public class VniAnimation : Animation
 	{
 		public VniAnimation(BinaryReader reader, int fileVersion)
@@ -118,69 +76,6 @@ namespace LibDmd.Converter.Colorize
 		public override string ToString()
 		{
 			return $"{Name}, {Frames.Count} frames";
-		}
-	}
-
-	public class VniAnimationFrame : AnimationFrame
-	{
-		public VniAnimationFrame(BinaryReader reader, int fileVersion)
-		{
-			int planeSize = reader.ReadInt16BE();
-			Delay = reader.ReadInt16BE();
-			if (fileVersion >= 4) {
-				Hash = reader.ReadBytes(4);
-			}
-			int numPlanes = reader.ReadByte();
-			Planes = new List<AnimationPlane>(numPlanes);
-			
-			if (fileVersion < 3) {
-				HasMask = ReadPlanes(reader, numPlanes, planeSize, false);
-
-			} else {
-				var compressed = reader.ReadByte() != 0;
-				if (!compressed) {
-					HasMask = ReadPlanes(reader, numPlanes, planeSize, false);
-
-				} else {
-
-					var compressedSize = reader.ReadInt32BE();
-					var compressedPlanes = reader.ReadBytes(compressedSize);
-					var dec = new HeatShrinkDecoder(10, 0, 1024);
-					var decompressedStream = new MemoryStream();
-					dec.Decode(new MemoryStream(compressedPlanes), decompressedStream);
-					decompressedStream.Seek(0, SeekOrigin.Begin);
-					HasMask = ReadPlanes(new BinaryReader(decompressedStream), numPlanes, planeSize, true);
-				}
-			}
-		}
-
-		private bool ReadPlanes(BinaryReader reader, int numPlanes, int planeSize, bool compressed)
-		{
-			//Logger.Debug("Reading {0} {1}planes at {2} bytes for frame...", numPlanes, compressed ? "compressed " : "", planeSize);
-			AnimationPlane mask = null;
-			for (var i = 0; i < numPlanes; i++) {
-				var plane = new VniAnimationPlane(reader, planeSize);
-				if (plane.Marker < numPlanes) {
-					Planes.Add(plane);
-				} else {
-					mask = plane;
-				}
-			}
-			// mask plane is the last in list but first in file
-			if (mask == null) {
-				return false;
-			}
-			Planes.Add(mask);
-			return true;
-		}
-	}
-
-	public class VniAnimationPlane : AnimationPlane
-	{
-		public VniAnimationPlane(BinaryReader reader, int planeSize)
-		{
-			Marker = reader.ReadByte();
-			Plane = reader.ReadBytes(planeSize);
 		}
 	}
 }
