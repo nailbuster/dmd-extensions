@@ -137,14 +137,14 @@ namespace LibDmd.Converter
 			}
 
 			if (AnimationsFsq == null) {
-				Logger.Warn("[colorize] Colorizer does not contain any animations, skipping lookup for position {0}.", mapping.Duration);
+				Logger.Warn("[colorize] Colorizer does not contain any animations, skipping lookup for position {0}.", mapping.Offset);
 				return false;
 			}
 
 			// Sisch wird än Animazion wird losgla
-			var animation = FrameSequence.Find(AnimationsFsq, mapping.Duration);
+			var animation = FrameSequence.Find(AnimationsFsq, mapping.Offset);
 			if (animation == null) {
-				Logger.Warn("[colorize] No animation found at position {0} for {1} frame.", mapping.Duration, masked);
+				Logger.Warn("[colorize] No animation found at position {0} for {1} frame.", mapping.Offset, masked);
 				return false;
 			}
 

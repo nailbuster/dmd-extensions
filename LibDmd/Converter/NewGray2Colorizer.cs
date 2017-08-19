@@ -79,8 +79,8 @@ namespace LibDmd.Converter
 			_paletteReset = null;
 			SetPalette(palette);
 
+			// Palettä risettä wenn ä Lengi gäh isch
 			if (mapping.Mode == SwitchMode.Palette && mapping.Duration > 0) {
-				// Palettä risettä wenn ä Lengi gäh isch
 				_paletteReset = Observable
 					.Never<Unit>()
 					.StartWith(Unit.Default)
@@ -93,8 +93,18 @@ namespace LibDmd.Converter
 					});
 			}
 
+			// Animazionä
 			if (mapping.Mode == SwitchMode.Replace || mapping.Mode == SwitchMode.ColorMask || mapping.Mode == SwitchMode.Follow) {
-				// read replacement frame
+				if (_animations == null) {
+					Logger.Warn("[colorize] Tried to load animation but no animation file loaded.");
+					return;
+				}
+				_activeAnimation = _animations.Find(mapping.Offset);
+
+				if (_activeAnimation == null) {
+					Logger.Warn("[colorize] Cannot find animation at position {0}.", mapping.Offset);
+					return;
+				}
 			}
 		}
 

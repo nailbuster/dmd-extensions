@@ -31,6 +31,15 @@ namespace LibDmd.Converter.Colorize
 		public int NumPlanes => Frames.Count > 0 ? Frames[0].Planes.Count : 0;
 
 		/// <summary>
+		/// Byte position of this animation in the file.
+		/// </summary>
+		/// 
+		/// <remarks>
+		/// Used as index to load animations.
+		/// </remarks>
+		public readonly long Offset;
+
+		/// <summary>
 		/// Next hash to look for (in col seq mode)
 		/// </summary>
 		uint Crc32 { get; }
@@ -63,8 +72,9 @@ namespace LibDmd.Converter.Colorize
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		protected Animation()
+		protected Animation(long offset)
 		{
+			Offset = offset;
 			Status = new AnimationStatus(this);
 		}
 

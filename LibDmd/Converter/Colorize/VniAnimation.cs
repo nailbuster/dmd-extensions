@@ -14,7 +14,7 @@ namespace LibDmd.Converter.Colorize
 {
 	public class VniAnimation : Animation
 	{
-		public VniAnimation(BinaryReader reader, int fileVersion)
+		public VniAnimation(BinaryReader reader, int fileVersion) : base(reader.BaseStream.Position)
 		{
 			// animations name
 			var nameLength = reader.ReadInt16BE();

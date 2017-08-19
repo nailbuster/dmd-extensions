@@ -37,10 +37,14 @@ namespace LibDmd.Converter.Colorize
 		public readonly ushort PaletteIndex;
 
 		/// <summary>
-		/// Im Modus 0 ischs wiä lang's gaht bis mr zrugg zur Standard-Palettä wächslet (wenn 0 gar nid zrugg wächslä).
-		/// Im Modus eis odr zwäi ischs d Byte-Position vodr Animazion im FSQ-Feil.
+		/// Wiä lang's gaht bis mr zrugg zur Standard-Palettä wächslet (wenn 0 gar nid zrugg wächslä).
 		/// </summary>
 		public readonly uint Duration;
+
+		/// <summary>
+		/// D Byte-Position vodr Animazion im FSQ/VNI-Feil.
+		/// </summary>
+		public readonly uint Offset;
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -52,8 +56,13 @@ namespace LibDmd.Converter.Colorize
 			Logger.Trace("  [{1}] [palette] Read mode as {0}", Mode, reader.BaseStream.Position);
 			PaletteIndex = reader.ReadUInt16BE();
 			Logger.Trace("  [{1}] [palette] Read index as {0}", PaletteIndex, reader.BaseStream.Position);
-			Duration = reader.ReadUInt32BE();
-			Logger.Trace("  [{1}] [palette] Read duration as {0}", Duration, reader.BaseStream.Position);
+			if (Mode == SwitchMode.Palette) {
+				Duration = reader.ReadUInt32BE();
+				Logger.Trace("  [{1}] [palette] Read duration as {0}", Duration, reader.BaseStream.Position);
+			} else {
+				Offset = reader.ReadUInt32BE();
+				Logger.Trace("  [{1}] [palette] Read offset as {0}", Offset, reader.BaseStream.Position);
+			}
 		}
 	}
 }

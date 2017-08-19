@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using NLog;
 
 namespace LibDmd.Converter.Colorize
@@ -13,6 +14,11 @@ namespace LibDmd.Converter.Colorize
 		public override string ToString()
 		{
 			return $"VPIN v{Version}, {Animations.Count} animation(s)";
+		}
+
+		public Animation Find(uint offset)
+		{
+			return Animations.FirstOrDefault(animation => animation.Offset == offset);
 		}
 	}
 }
