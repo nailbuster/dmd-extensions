@@ -70,7 +70,7 @@ namespace LibDmd.Converter
 			var match = false;
 
 			// Jedi Plane wird einisch duräghäscht
-			for (var i = 0; i < 2; i++) {
+			for (var i = 0; i < BitLength; i++) {
 				var checksum = FrameUtil.Checksum(planes[i]);
 
 				//FrameUtil.DumpBinary(Width, Height, planes[i]);
@@ -88,7 +88,7 @@ namespace LibDmd.Converter
 			// Faus nei de gemmr Maskä fir Maskä durä und luägid ob da eppis passt
 			if (!match && Coloring.Masks.Length > 0) {
 				var maskedPlane = new byte[512];
-				for (var i = 0; i < 2; i++) {
+				for (var i = 0; i < BitLength; i++) {
 					foreach (var mask in Coloring.Masks) {
 						var plane = new BitArray(planes[i]);
 						plane.And(new BitArray(mask)).CopyTo(maskedPlane, 0);

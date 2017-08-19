@@ -119,7 +119,7 @@ namespace LibDmd.Converter
 				SetPalette(palette);
 			}
 			
-			if (mapping.Mode == 0) {
+			if (mapping.Mode == SwitchMode.Palette) {
 				// Numä iifärbä (hemmr scho) und guät isch
 				if (mapping.Duration > 0) {
 					_paletteReset = Observable

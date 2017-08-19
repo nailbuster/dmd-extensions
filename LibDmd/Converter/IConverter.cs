@@ -21,8 +21,8 @@ namespace LibDmd.Converter
 		/// <summary>
 		/// Converts from source to destination
 		/// </summary>
-		/// <param name="from">Source data</param>
-		void Convert(byte[] from);
+		/// <param name="frame">Source data</param>
+		void Convert(byte[] frame);
 
 		/// <summary>
 		/// Initializes the converter. Run before rendering is started and after

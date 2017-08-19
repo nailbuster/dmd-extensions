@@ -68,6 +68,14 @@ namespace LibDmd.Converter.Colorize
 			Status = new AnimationStatus(this);
 		}
 
+		/// <summary>
+		/// Resets stops the animation and resets the status.
+		/// </summary>
+		public void Reset()
+		{
+			
+		}
+
 		public override string ToString()
 		{
 			return $"{Name}, {Frames.Count} frames";
