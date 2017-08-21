@@ -22,7 +22,7 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public int NumFrames => Frames.Count;
 
-		public AnimationStatus Status { get; }
+		public AnimationStatus Status { get; private set; }
 
 		/// <summary>
 		/// Number of bitplanes the frames of the animation are made of when
@@ -75,7 +75,6 @@ namespace LibDmd.Converter.Colorize
 		protected Animation(long offset)
 		{
 			Offset = offset;
-			Status = new AnimationStatus(this);
 		}
 
 		/// <summary>
@@ -89,6 +88,11 @@ namespace LibDmd.Converter.Colorize
 		public override string ToString()
 		{
 			return $"{Name}, {Frames.Count} frames";
+		}
+
+		public void Start(SwitchMode mode)
+		{
+			Status = new AnimationStatus(this, mode);
 		}
 	}
 
@@ -113,9 +117,10 @@ namespace LibDmd.Converter.Colorize
 		private readonly Animation _parent;
 		private int _frameIndex;
 
-		public AnimationStatus(Animation parent)
+		public AnimationStatus(Animation parent, SwitchMode switchMode)
 		{
 			_parent = parent;
+			SwitchMode = switchMode;
 		}
 
 		public void NextFrame()
