@@ -46,6 +46,12 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public readonly uint Offset;
 
+		/// <summary>
+		/// Wenn ja, de tiämmer än Animazion uisäsuächä und loslah, sisch ischs numä ä
+		/// Palettäwächsü oder sisch ä Seich.
+		/// </summary>
+		public bool IsAnimation => Mode == SwitchMode.Replace || Mode == SwitchMode.ColorMask || Mode == SwitchMode.Follow;
+
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public Mapping(BinaryReader reader)

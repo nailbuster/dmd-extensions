@@ -2,28 +2,29 @@
 using System.IO;
 using LibDmd.Common;
 using LibDmd.Common.HeatShrink;
+using MonoLibUsb;
 
 namespace LibDmd.Converter.Colorize
 {
 	public class VniAnimationFrame : AnimationFrame
 	{
-		public VniAnimationFrame(BinaryReader reader, int fileVersion)
+		public VniAnimationFrame(BinaryReader reader, int fileVersion, uint time) : base(time)
 		{
 			int planeSize = reader.ReadInt16BE();
-			Delay = reader.ReadInt16BE();
+			Delay = (uint) reader.ReadInt16BE();
 			if (fileVersion >= 4) {
 				Hash = reader.ReadBytes(4);
 			}
-			int numPlanes = reader.ReadByte();
-			Planes = new List<AnimationPlane>(numPlanes);
+			BitLength = reader.ReadByte();
+			Planes = new List<AnimationPlane>(BitLength);
 			
 			if (fileVersion < 3) {
-				HasMask = ReadPlanes(reader, numPlanes, planeSize, false);
+				HasMask = ReadPlanes(reader, planeSize);
 
 			} else {
 				var compressed = reader.ReadByte() != 0;
 				if (!compressed) {
-					HasMask = ReadPlanes(reader, numPlanes, planeSize, false);
+					HasMask = ReadPlanes(reader, planeSize);
 
 				} else {
 
@@ -33,18 +34,17 @@ namespace LibDmd.Converter.Colorize
 					var decompressedStream = new MemoryStream();
 					dec.Decode(new MemoryStream(compressedPlanes), decompressedStream);
 					decompressedStream.Seek(0, SeekOrigin.Begin);
-					HasMask = ReadPlanes(new BinaryReader(decompressedStream), numPlanes, planeSize, true);
+					HasMask = ReadPlanes(new BinaryReader(decompressedStream), planeSize);
 				}
 			}
 		}
 
-		private bool ReadPlanes(BinaryReader reader, int numPlanes, int planeSize, bool compressed)
+		private bool ReadPlanes(BinaryReader reader, int planeSize)
 		{
-			//Logger.Debug("Reading {0} {1}planes at {2} bytes for frame...", numPlanes, compressed ? "compressed " : "", planeSize);
 			AnimationPlane mask = null;
-			for (var i = 0; i < numPlanes; i++) {
+			for (var i = 0; i < BitLength; i++) {
 				var plane = new VniAnimationPlane(reader, planeSize);
-				if (plane.Marker < numPlanes) {
+				if (plane.Marker < BitLength) {
 					Planes.Add(plane);
 				} else {
 					mask = plane;

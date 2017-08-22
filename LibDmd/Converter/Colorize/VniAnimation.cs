@@ -49,13 +49,14 @@ namespace LibDmd.Converter.Colorize
 			}
 
 			Logger.Debug("VNI[{3}] Reading {0} frame{1} for animation \"{2}\"...", numFrames, numFrames == 1 ? "" : "s", Name, reader.BaseStream.Position);
-			Frames = new List<AnimationFrame>(numFrames);
+			Frames = new AnimationFrame[numFrames];
+			uint time = 0;
 			for (var i = 0; i < numFrames; i++) {
-				var frame = new VniAnimationFrame(reader, fileVersion);
-				if (frame.HasMask && TransitionFrom == 0) {
+				Frames[i] = new VniAnimationFrame(reader, fileVersion, time);
+				if (Frames[i].HasMask && TransitionFrom == 0) {
 					TransitionFrom = i;
 				}
-				Frames.Add(frame);
+				time += Frames[i].Delay;
 			}
 		}
 
@@ -75,7 +76,7 @@ namespace LibDmd.Converter.Colorize
 
 		public override string ToString()
 		{
-			return $"{Name}, {Frames.Count} frames";
+			return $"{Name}, {Frames.Length} frames";
 		}
 	}
 }

@@ -28,5 +28,6 @@
 		Event = 3,
 
 		Follow = 4
+
 	}
 }

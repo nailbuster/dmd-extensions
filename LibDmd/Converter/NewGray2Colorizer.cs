@@ -15,7 +15,7 @@ using NLog;
 
 namespace LibDmd.Converter
 {
-	public class NewGray2Colorizer : AbstractSource, IConverter, IColoredGray2Source, IColoredGray4Source
+	public class NewGray2Colorizer : AbstractSource, IConverter
 	{
 		public override string Name { get; } = "NEW 2-Bit Colorizer";
 		public FrameFormat From { get; } = FrameFormat.Gray2;
@@ -53,6 +53,12 @@ namespace LibDmd.Converter
 		public void Convert(byte[] frame)
 		{
 			var planes = FrameUtil.Split(Dimensions.Value.Width, Dimensions.Value.Height, 2, frame);
+			TriggerAnimation(planes);
+			Render(Convert(planes));
+		}
+
+		private void TriggerAnimation(byte[][] planes)
+		{
 			var mapping = FindMapping(planes);
 
 			// Faus niid gfundä hemmr fertig
@@ -80,7 +86,7 @@ namespace LibDmd.Converter
 			SetPalette(palette);
 
 			// Palettä risettä wenn ä Lengi gäh isch
-			if (mapping.Mode == SwitchMode.Palette && mapping.Duration > 0) {
+			if (!mapping.IsAnimation && mapping.Duration > 0) {
 				_paletteReset = Observable
 					.Never<Unit>()
 					.StartWith(Unit.Default)
@@ -94,7 +100,7 @@ namespace LibDmd.Converter
 			}
 
 			// Animazionä
-			if (mapping.Mode == SwitchMode.Replace || mapping.Mode == SwitchMode.ColorMask || mapping.Mode == SwitchMode.Follow) {
+			if (mapping.IsAnimation) {
 				if (_animations == null) {
 					Logger.Warn("[colorize] Tried to load animation but no animation file loaded.");
 					return;
@@ -105,12 +111,47 @@ namespace LibDmd.Converter
 					Logger.Warn("[colorize] Cannot find animation at position {0}.", mapping.Offset);
 					return;
 				}
+
+				_activeAnimation.Start(mapping.Mode, planes, ColoredGray2AnimationFrames, ColoredGray4AnimationFrames, _palette, AnimationFinished);
 			}
 		}
 
+		private byte[][] Convert(byte[][] planes)
+		{
+			if (_activeAnimation == null) {
+				return planes;
+			}
+			_activeAnimation.NextFrame(planes);
+
+			return null;
+		}
+
+		private void Render(byte[][] planes)
+		{
+			if (planes == null) {
+				return;
+			}
+
+			// Wenns kä Erwiiterig gä hett, de gäbemer eifach d Planes mit dr Palettä zrugg
+			if (planes.Length == 2) {
+				ColoredGray2AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
+			}
+
+			// Faus scho, de schickermr s Frame uifd entsprächendi Uisgab faus diä gsetzt isch
+			if (planes.Length == 4) {
+				ColoredGray4AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
+			}
+		}
+
+		/// <summary>
+		/// Tuät Bitplane fir Bitplane häschä unds erschtä Mäpping wo gfundä
+		/// wordä isch zrugg gäh.
+		/// </summary>
+		/// <param name="planes">Bitplanes vom Biud</param>
+		/// <returns>Mäpping odr null wenn nid gfundä</returns>
 		private Mapping FindMapping(byte[][] planes)
 		{
-			var maskSize = Dimensions.Value.Width*Dimensions.Value.Height/8;
+			var maskSize = Dimensions.Value.Width * Dimensions.Value.Height / 8;
 
 			// Jedi Plane wird einisch duräghäscht
 			for (var i = 0; i < 2; i++)
@@ -158,6 +199,17 @@ namespace LibDmd.Converter
 			}
 			Logger.Debug("[colorize] Setting new palette: [ {0} ]", string.Join(" ", palette.Colors.Select(c => c.ToString())));
 			_palette = palette;
+		}
+
+		/// <summary>
+		/// Wird uisgfiährt wenn än Animazion fertig isch, cha irgend ä Modus si.
+		/// </summary>
+		protected void AnimationFinished()
+		{
+			//Logger.Trace("[timing] Animation finished.");
+			//LastChecksum = 0x0;
+			SetPalette(_defaultPalette);
+			_activeAnimation = null;
 		}
 
 		public IObservable<Tuple<byte[][], Color[]>> GetColoredGray2Frames()

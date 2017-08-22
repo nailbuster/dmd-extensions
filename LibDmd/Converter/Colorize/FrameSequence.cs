@@ -106,7 +106,7 @@ namespace LibDmd.Converter.Colorize
 		}
 
 		/// <summary>
-		/// Tuät d Animazion looslah und d Biudli uifd viärbit-Queuä uisgäh
+		/// Tuät d Animazion looslah und d Biudli uifd viärbit-Queuä uisgäh.
 		/// </summary>
 		/// <remarks>
 		/// Das hiä isch dr Fau wo Buider vo VPM mit zwe Bits erwiiterid wärdid.
