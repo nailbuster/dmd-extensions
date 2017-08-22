@@ -158,6 +158,7 @@
     <Compile Include="Common\HeatShrink\Result.cs" />
     <Compile Include="Common\ImageUtil.cs" />
     <Compile Include="Common\InteropUtil.cs" />
+    <Compile Include="Common\Profiler.cs" />
     <Compile Include="Common\TransformationUtil.cs" />
     <Compile Include="Common\VirtualDmd.xaml.cs">
       <DependentUpon>VirtualDmd.xaml</DependentUpon>
