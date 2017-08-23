@@ -19,7 +19,7 @@ namespace LibDmd.Converter.Colorize
 		/// <summary>
 		/// Bitlängi odr Ahzahl Planes vo dr Buidr vo dr Animazion
 		/// </summary>
-		public int NumPlanes => Frames.Length > 0 ? Frames[0].Planes.Count : 0;
+		public int BitLength => Frames.Length > 0 ? Frames[0].BitLength : 0;
 
 		/// <summary>
 		/// Uif welärä Posizion i Bytes d Animazion im Feil gsi isch

@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using LibDmd.Common;
 using LibDmd.Converter.Colorize;
@@ -25,14 +22,34 @@ namespace LibDmd.Converter
 		protected readonly Subject<Tuple<byte[][], Color[]>> ColoredGray2AnimationFrames = new Subject<Tuple<byte[][], Color[]>>();
 		protected readonly Subject<Tuple<byte[][], Color[]>> ColoredGray4AnimationFrames = new Subject<Tuple<byte[][], Color[]>>();
 
-		protected byte[] ColoredFrame;
-
+		/// <summary>
+		/// Datä vomer uism .pal-Feil uisägläsä hend
+		/// </summary>
 		private readonly Coloring _coloring;
+
+		/// <summary>
+		/// Datä vomer uism Animazionsfeil uisägläsä hend
+		/// </summary>
 		private readonly AnimationSet _animations;
 
-		private Animation _activeAnimation = null;
-		private Palette _defaultPalette;
+		/// <summary>
+		/// Wenn nid `null` de isch das d Animazion wo grad ablaift
+		/// </summary>
+		private Animation _activeAnimation;
+
+		/// <summary>
+		/// Die etzigi Palettä
+		/// </summary>
 		private Palette _palette;
+
+		/// <summary>
+		/// D Standardpalettä wo bruicht wird wenn grad nid erkennt wordä isch
+		/// </summary>
+		private Palette _defaultPalette;
+
+		/// <summary>
+		/// Dr Timer wo bimänä ziitbeschränktä Palettäwächsu uifd Standardpalettä zruggsetzt
+		/// </summary>
 		private IDisposable _paletteReset;
 
 		protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -47,7 +64,6 @@ namespace LibDmd.Converter
 
 		public void Init()
 		{
-			Dimensions.Subscribe(dim => ColoredFrame = new byte[dim.Width * dim.Height * 3]);
 		}
 
 		public void Convert(byte[] frame)
@@ -65,6 +81,10 @@ namespace LibDmd.Converter
 			Render(planes);
 		}
 
+		/// <summary>
+		/// Tuät s Biud durähäschä, luägt obs än Animazion uisleest odr Palettä setzt und macht das grad.
+		/// </summary>
+		/// <param name="planes">S Buid zum iberpriäfä</param>
 		private void TriggerAnimation(byte[][] planes)
 		{
 			var mapping = FindMapping(planes);
@@ -124,20 +144,6 @@ namespace LibDmd.Converter
 			}
 		}
 
-		private void Render(byte[][] planes)
-		{
-			// Wenns kä Erwiiterig gä hett, de gäbemer eifach d Planes mit dr Palettä zrugg
-			if (planes.Length == 2) {
-				ColoredGray2AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
-			}
-
-			// Faus scho, de schickermr s Frame uifd entsprächendi Uisgab faus diä gsetzt isch
-			if (planes.Length == 4) {
-				ColoredGray4AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
-			}
-		}
-
-
 		/// <summary>
 		/// Tuät Bitplane fir Bitplane häschä unds erschtä Mäpping wo gfundä
 		/// wordä isch zrugg gäh.
@@ -176,6 +182,23 @@ namespace LibDmd.Converter
 				}
 			}
 			return null;
+		}
+
+		/// <summary>
+		/// Tuäts Biud uif diä entschprächändä Sourcä uisgäh.
+		/// </summary>
+		/// <param name="planes">S Biud zum uisgäh</param>
+		private void Render(byte[][] planes)
+		{
+			// Wenns kä Erwiiterig gä hett, de gäbemer eifach d Planes mit dr Palettä zrugg
+			if (planes.Length == 2) {
+				ColoredGray2AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
+			}
+
+			// Faus scho, de schickermr s Frame uifd entsprächendi Uisgab faus diä gsetzt isch
+			if (planes.Length == 4) {
+				ColoredGray4AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
+			}
 		}
 
 		/// <summary>
