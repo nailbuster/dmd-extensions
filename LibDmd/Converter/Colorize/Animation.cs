@@ -141,12 +141,12 @@ namespace LibDmd.Converter.Colorize
 		{
 			_currentVpmFrame = firstFrame;
 			if (Frames.Length == 1) {
-				Logger.Info("[vni] Enhancing one frame.");
+				Logger.Info("[vni][{0}] Enhancing one frame ({1})", SwitchMode, Name);
 				render(new []{ _currentVpmFrame[0], _currentVpmFrame[1], Frames[0].Planes[0].Plane, Frames[0].Planes[1].Plane });
 				FinishIn(Frames[0].Delay, completed);
 				return;
 			}
-			Logger.Info("[vni] Starting enhanced animation of {0} frames...", Frames.Length);
+			Logger.Info("[vni][{0}] Starting enhanced animation of {1} frames ({2})...", SwitchMode, Frames.Length, Name);
 			_animation = _frames
 				.Select(frame => new []{ _currentVpmFrame[0], _currentVpmFrame[1], frame.Planes[0].Plane, frame.Planes[1].Plane })
 				.Do(_ => _frameIndex++)
@@ -168,12 +168,12 @@ namespace LibDmd.Converter.Colorize
 		private void StartReplace(Action<byte[][]> render, Action completed = null)
 		{
 			if (Frames.Length == 1) {
-				Logger.Info("[vni] Replacing one frame.");
+				Logger.Info("[vni][{0}] Replacing one frame ({1}).", SwitchMode, Name);
 				render(Frames[0].PlaneData);
 				FinishIn(Frames[0].Delay, completed);
 				return;
 			}
-			Logger.Info("[vni] Starting colored gray4 animation of {0} frames...", Frames.Length);
+			Logger.Info("[vni][{0}] Starting colored gray4 animation of {1} frames ({2})...", SwitchMode, Frames.Length, Name);
 			_animation = _frames
 				.Do(_ => _frameIndex++)
 				.Select(frame => frame.PlaneData)

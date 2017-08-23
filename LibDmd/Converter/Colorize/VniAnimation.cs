@@ -53,7 +53,7 @@ namespace LibDmd.Converter.Colorize
 			uint time = 0;
 			for (var i = 0; i < numFrames; i++) {
 				Frames[i] = new VniAnimationFrame(reader, fileVersion, time);
-				if (Frames[i].HasMask && TransitionFrom == 0) {
+				if (Frames[i].Mask != null && TransitionFrom == 0) {
 					TransitionFrom = i;
 				}
 				time += Frames[i].Delay;

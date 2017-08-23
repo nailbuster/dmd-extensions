@@ -22,7 +22,10 @@ namespace LibDmd.Converter.Colorize
 		public int BitLength { get; protected set; }
 
 		public List<AnimationPlane> Planes { get; protected set; }
-		public bool HasMask { get; protected set; }
+		
+		public byte[] Mask { get; protected set; }
+
+		//public bool HasMask { get; protected set; }
 
 		public byte[][] PlaneData => Planes.Select(p => p.Plane).ToArray();
 

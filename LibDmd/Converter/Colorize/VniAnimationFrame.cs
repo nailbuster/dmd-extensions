@@ -19,12 +19,12 @@ namespace LibDmd.Converter.Colorize
 			Planes = new List<AnimationPlane>(BitLength);
 			
 			if (fileVersion < 3) {
-				HasMask = ReadPlanes(reader, planeSize);
+				ReadPlanes(reader, planeSize);
 
 			} else {
 				var compressed = reader.ReadByte() != 0;
 				if (!compressed) {
-					HasMask = ReadPlanes(reader, planeSize);
+					ReadPlanes(reader, planeSize);
 
 				} else {
 
@@ -34,28 +34,22 @@ namespace LibDmd.Converter.Colorize
 					var decompressedStream = new MemoryStream();
 					dec.Decode(new MemoryStream(compressedPlanes), decompressedStream);
 					decompressedStream.Seek(0, SeekOrigin.Begin);
-					HasMask = ReadPlanes(new BinaryReader(decompressedStream), planeSize);
+					ReadPlanes(new BinaryReader(decompressedStream), planeSize);
 				}
 			}
 		}
 
-		private bool ReadPlanes(BinaryReader reader, int planeSize)
+		private void ReadPlanes(BinaryReader reader, int planeSize)
 		{
-			AnimationPlane mask = null;
 			for (var i = 0; i < BitLength; i++) {
-				var plane = new VniAnimationPlane(reader, planeSize);
-				if (plane.Marker < BitLength) {
-					Planes.Add(plane);
+				var marker = reader.ReadByte();
+				if (marker == 0x6d) {
+					Mask = reader.ReadBytes(planeSize);
 				} else {
-					mask = plane;
+					var plane = new VniAnimationPlane(reader, planeSize, marker);
+					Planes.Add(plane);
 				}
 			}
-			// mask plane is the last in list but first in file
-			if (mask == null) {
-				return false;
-			}
-			Planes.Add(mask);
-			return true;
 		}
 	}
 }
