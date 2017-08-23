@@ -15,7 +15,7 @@ using NLog;
 
 namespace LibDmd.Converter
 {
-	public class NewGray2Colorizer : AbstractSource, IConverter
+	public class NewGray2Colorizer : AbstractSource, IConverter, IColoredGray2Source, IColoredGray4Source
 	{
 		public override string Name { get; } = "NEW 2-Bit Colorizer";
 		public FrameFormat From { get; } = FrameFormat.Gray2;
@@ -54,7 +54,15 @@ namespace LibDmd.Converter
 		{
 			var planes = FrameUtil.Split(Dimensions.Value.Width, Dimensions.Value.Height, 2, frame);
 			TriggerAnimation(planes);
-			Render(Convert(planes));
+
+			// Wenn än Animazion am laifä isch de wirds Frame dr Animazion zuägschpiut wos Resultat de säubr uisäschickt
+			if (_activeAnimation != null) {
+				_activeAnimation.NextFrame(planes);
+				return;
+			}
+
+			// Sisch diräkt uisgäh
+			Render(planes);
 		}
 
 		private void TriggerAnimation(byte[][] planes)
@@ -72,7 +80,7 @@ namespace LibDmd.Converter
 			}
 
 			// Faus scho eppis am laifä isch, ahautä
-			_activeAnimation?.Reset();
+			_activeAnimation?.Stop();
 
 			// Palettä ladä
 			var palette = _coloring.GetPalette(mapping.PaletteIndex);
@@ -112,26 +120,12 @@ namespace LibDmd.Converter
 					return;
 				}
 
-				_activeAnimation.Start(mapping.Mode, planes, ColoredGray2AnimationFrames, ColoredGray4AnimationFrames, _palette, AnimationFinished);
+				_activeAnimation.Start(mapping.Mode, planes, Render, AnimationFinished);
 			}
-		}
-
-		private byte[][] Convert(byte[][] planes)
-		{
-			if (_activeAnimation == null) {
-				return planes;
-			}
-			_activeAnimation.NextFrame(planes);
-
-			return null;
 		}
 
 		private void Render(byte[][] planes)
 		{
-			if (planes == null) {
-				return;
-			}
-
 			// Wenns kä Erwiiterig gä hett, de gäbemer eifach d Planes mit dr Palettä zrugg
 			if (planes.Length == 2) {
 				ColoredGray2AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
@@ -142,6 +136,7 @@ namespace LibDmd.Converter
 				ColoredGray4AnimationFrames.OnNext(new Tuple<byte[][], Color[]>(planes, _palette.GetColors(planes.Length)));
 			}
 		}
+
 
 		/// <summary>
 		/// Tuät Bitplane fir Bitplane häschä unds erschtä Mäpping wo gfundä
