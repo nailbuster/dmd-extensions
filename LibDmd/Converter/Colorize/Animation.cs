@@ -139,30 +139,18 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="completed">Wird uisgfiärt wenn fertig</param>
 		private void StartEnhance(byte[][] firstFrame, Action<byte[][]> render, Action completed = null)
 		{
-			Logger.Info("[vni] Starting enhanced animation of {0} frames...", Frames.Length);
-			var t = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
-			var n = 0;
 			_currentVpmFrame = firstFrame;
+			if (Frames.Length == 1) {
+				Logger.Info("[vni] Enhancing one frame.");
+				render(new []{ _currentVpmFrame[0], _currentVpmFrame[1], Frames[0].Planes[0].Plane, Frames[0].Planes[1].Plane });
+				FinishIn(Frames[0].Delay, completed);
+				return;
+			}
+			Logger.Info("[vni] Starting enhanced animation of {0} frames...", Frames.Length);
 			_animation = _frames
 				.Select(frame => new []{ _currentVpmFrame[0], _currentVpmFrame[1], frame.Planes[0].Plane, frame.Planes[1].Plane })
 				.Do(_ => _frameIndex++)
-				.Subscribe(planes => {
-					//Logger.Trace("[timing] FSQ enhanced Frame #{0} played ({1} ms, theory: {2} ms).", n, (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond) - t, _frames[n].Time);
-					render.Invoke(planes);
-					n++;
-				}, () => {
-					//Logger.Trace("[timing] Last frame enhanced, waiting {0}ms for last frame to finish playing.", _frames[_frames.Length - 1].Delay);
-
-					// nu uifs letschti biud wartä bis mer fertig sind
-					Observable
-						.Never<Unit>()
-						.StartWith(Unit.Default)
-						.Delay(TimeSpan.FromMilliseconds(Frames[Frames.Count() - 1].Delay))
-						.Subscribe(_ => {
-							IsRunning = false;
-							completed?.Invoke();
-						});
-				});
+				.Subscribe(render.Invoke, () => FinishIn(Frames[Frames.Count() - 1].Delay, completed));
 		}
 
 		/// <summary>
@@ -179,26 +167,34 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="completed">Wird uisgfiärt wenn fertig</param>
 		private void StartReplace(Action<byte[][]> render, Action completed = null)
 		{
+			if (Frames.Length == 1) {
+				Logger.Info("[vni] Replacing one frame.");
+				render(Frames[0].PlaneData);
+				FinishIn(Frames[0].Delay, completed);
+				return;
+			}
 			Logger.Info("[vni] Starting colored gray4 animation of {0} frames...", Frames.Length);
-			var t = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
-			var n = 0;
 			_animation = _frames
 				.Do(_ => _frameIndex++)
-				.Subscribe(frame => {
-					//Logger.Trace("[timing] VNI Frame #{0} played ({1} ms, theory: {2} ms).", n, (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond) - t, _frames[n].Time);
-					render.Invoke(frame.PlaneData);
-					n++;
-				}, () => {
+				.Select(frame => frame.PlaneData)
+				.Subscribe(render.Invoke, () => FinishIn(Frames[Frames.Length - 1].Delay, completed));
+		}
 
-					// nu uifs letschti biud wartä bis mer fertig sind
-					Observable
-						.Never<Unit>()
-						.StartWith(Unit.Default)
-						.Delay(TimeSpan.FromMilliseconds(Frames[Frames.Length - 1].Delay))
-						.Subscribe(_ => {
-							IsRunning = false;
-							completed?.Invoke();
-						});
+		/// <summary>
+		/// Tuät d Animazion nachärä gwissä Ziit aahautä
+		/// </summary>
+		/// <param name="milliseconds">Ziit i Millisekundä</param>
+		/// <param name="completed">Dr Callback wo muäss uifgriäft wärdä</param>
+		private void FinishIn(uint milliseconds, Action completed)
+		{
+			// nu uifs letschti biud wartä bis mer fertig sind
+			Observable
+				.Never<Unit>()
+				.StartWith(Unit.Default)
+				.Delay(TimeSpan.FromMilliseconds(milliseconds))
+				.Subscribe(_ => {
+					IsRunning = false;
+					completed?.Invoke();
 				});
 		}
 

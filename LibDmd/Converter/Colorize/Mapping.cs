@@ -57,17 +57,17 @@ namespace LibDmd.Converter.Colorize
 		public Mapping(BinaryReader reader)
 		{
 			Checksum = reader.ReadUInt32BE();
-			Logger.Trace("  [{1}] [palette] Read checksum as {0}", Checksum, reader.BaseStream.Position);
+			//Logger.Trace("  [{1}] [palette] Read checksum as {0}", Checksum, reader.BaseStream.Position);
 			Mode = (SwitchMode)reader.ReadByte();
-			Logger.Trace("  [{1}] [palette] Read mode as {0}", Mode, reader.BaseStream.Position);
+			//Logger.Trace("  [{1}] [palette] Read mode as {0}", Mode, reader.BaseStream.Position);
 			PaletteIndex = reader.ReadUInt16BE();
-			Logger.Trace("  [{1}] [palette] Read index as {0}", PaletteIndex, reader.BaseStream.Position);
+			//Logger.Trace("  [{1}] [palette] Read index as {0}", PaletteIndex, reader.BaseStream.Position);
 			if (Mode == SwitchMode.Palette) {
 				Duration = reader.ReadUInt32BE();
-				Logger.Trace("  [{1}] [palette] Read duration as {0}", Duration, reader.BaseStream.Position);
+				//Logger.Trace("  [{1}] [palette] Read duration as {0}", Duration, reader.BaseStream.Position);
 			} else {
 				Offset = reader.ReadUInt32BE();
-				Logger.Trace("  [{1}] [palette] Read offset as {0}", Offset, reader.BaseStream.Position);
+				//Logger.Trace("  [{1}] [palette] Read offset as {0}", Offset, reader.BaseStream.Position);
 			}
 		}
 	}
