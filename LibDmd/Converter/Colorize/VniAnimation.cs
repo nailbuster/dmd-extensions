@@ -50,13 +50,13 @@ namespace LibDmd.Converter.Colorize
 
 			Logger.Debug("VNI[{3}] Reading {0} frame{1} for animation \"{2}\"...", numFrames, numFrames == 1 ? "" : "s", Name, reader.BaseStream.Position);
 			Frames = new AnimationFrame[numFrames];
-			uint time = 0;
+			AnimationDuration = 0;
 			for (var i = 0; i < numFrames; i++) {
-				Frames[i] = new VniAnimationFrame(reader, fileVersion, time);
+				Frames[i] = new VniAnimationFrame(reader, fileVersion, AnimationDuration);
 				if (Frames[i].Mask != null && TransitionFrom == 0) {
 					TransitionFrom = i;
 				}
-				time += Frames[i].Delay;
+				AnimationDuration += Frames[i].Delay;
 			}
 		}
 

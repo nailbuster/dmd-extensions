@@ -129,6 +129,8 @@ namespace LibDmd.Converter
 
 			// Animazionä
 			if (mapping.IsAnimation) {
+
+				// Luägä ob ibrhaipt äs VNI/FSQ Feil umä gsi isch
 				if (_animations == null) {
 					Logger.Warn("[colorize] Tried to load animation but no animation file loaded.");
 					return;

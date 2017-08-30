@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Windows.Media;
+using MonoLibUsb;
 using NLog;
 
 namespace LibDmd.Converter.Colorize
@@ -22,7 +23,7 @@ namespace LibDmd.Converter.Colorize
 		public int BitLength => Frames.Length > 0 ? Frames[0].BitLength : 0;
 
 		/// <summary>
-		/// Uif welärä Posizion i Bytes d Animazion im Feil gsi isch
+		/// Uif welärä Posizion (i Bytes) d Animazion im Feil gsi isch
 		/// </summary>
 		/// 
 		/// <remarks>
@@ -34,6 +35,11 @@ namespace LibDmd.Converter.Colorize
 		/// D Biudr vo dr Animazion
 		/// </summary>
 		protected AnimationFrame[] Frames;
+
+		/// <summary>
+		/// D Lengi vo dr ganzä Animazio i Millisekundä
+		/// </summary>
+		protected uint AnimationDuration;
 
 		#region Unused Props
 		protected int Cycles;
@@ -78,10 +84,13 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public bool IsRunning { get; private set; }
 
+		public int[] TimingDeltas;
 
 		private IObservable<AnimationFrame> _frames;
-		private byte[][] _currentVpmFrame;
+		private Action<byte[][]> _currentRender;
+		private int _lastTick;
 		private IDisposable _animation;
+		private IDisposable _terminator;
 		private int _frameIndex;
 
 		#endregion
@@ -128,10 +137,9 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		/// 
 		/// <remarks>
-		/// S Timing wird wiä im Modus eis vo dr Animazion vorgäh, das heisst s 
-		/// letschtä Biud vo VPM definiärt diä erschtä zwäi Bits unds jedes Biud
-		/// vord Animazion tuät diä reschtlichä zwäi Bits ergänzä unds de uifd
-		/// Viärbit-Queuä uisgäh.
+		/// S Timing wird im Gägäsatz zum Modus eis vo <see cref="NextFrame"/>
+		/// vorgäh. Das heisst jedes Biud vo VPM nimmt sich eis vor Animazion 
+		/// vom Schtapu zum Erwiitärä bis es keini me hed. 
 		/// </remarks>
 		/// 
 		/// <param name="firstFrame">S Buid vo VPM wod Animazion losgla het</param>
@@ -139,18 +147,14 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="completed">Wird uisgfiärt wenn fertig</param>
 		private void StartEnhance(byte[][] firstFrame, Action<byte[][]> render, Action completed = null)
 		{
-			_currentVpmFrame = firstFrame;
-			if (Frames.Length == 1) {
-				Logger.Info("[vni][{0}] Enhancing one frame ({1})", SwitchMode, Name);
-				render(new []{ _currentVpmFrame[0], _currentVpmFrame[1], Frames[0].Planes[0].Plane, Frames[0].Planes[1].Plane });
-				FinishIn(Frames[0].Delay, completed);
-				return;
-			}
-			Logger.Info("[vni][{0}] Starting enhanced animation of {1} frames ({2})...", SwitchMode, Frames.Length, Name);
-			_animation = _frames
-				.Select(frame => new []{ _currentVpmFrame[0], _currentVpmFrame[1], frame.Planes[0].Plane, frame.Planes[1].Plane })
-				.Do(_ => _frameIndex++)
-				.Subscribe(render.Invoke, () => FinishIn(Frames[Frames.Count() - 1].Delay, completed));
+			_frameIndex = 0;
+			_lastTick = Environment.TickCount;
+			_currentRender = render;
+			TimingDeltas = new int[NumFrames];
+
+			Logger.Info("[vni][{0}] Starting enhanced animation of {1} frame{2} ({3})...", SwitchMode, NumFrames, NumFrames == 1 ? "" : "s", Name);
+			EnhanceFrame(firstFrame);
+			FinishIn(AnimationDuration, completed);
 		}
 
 		/// <summary>
@@ -181,6 +185,25 @@ namespace LibDmd.Converter.Colorize
 		}
 
 		/// <summary>
+		/// Tuät s gegäbänä Biud mit dä Bitplanes vom nächschtä Biud vo dr Animazion erwiitärä.
+		/// </summary>
+		/// <param name="vpmFrame">S Biud wo erwiitered wird</param>
+		private void EnhanceFrame(byte[][] vpmFrame)
+		{
+			if (_frameIndex >= NumFrames) {
+				_frameIndex++;
+				Logger.Warn("[vni][{0}] Got frame {1} of {2} to enhance and animation still running, ignoring", SwitchMode, _frameIndex, NumFrames);
+				return;
+			}
+
+			var vpmDelay = Environment.TickCount - _lastTick;
+			TimingDeltas[_frameIndex] = vpmDelay - (int)Frames[_frameIndex].Delay;
+			_currentRender(new[] { vpmFrame[0], vpmFrame[1], Frames[_frameIndex].Planes[0].Plane, Frames[_frameIndex].Planes[1].Plane });
+			_frameIndex++;
+			_lastTick = Environment.TickCount;
+		}
+
+		/// <summary>
 		/// Tuät d Animazion nachärä gwissä Ziit aahautä
 		/// </summary>
 		/// <param name="milliseconds">Ziit i Millisekundä</param>
@@ -188,12 +211,12 @@ namespace LibDmd.Converter.Colorize
 		private void FinishIn(uint milliseconds, Action completed)
 		{
 			// nu uifs letschti biud wartä bis mer fertig sind
-			Observable
+			_terminator = Observable
 				.Never<Unit>()
 				.StartWith(Unit.Default)
 				.Delay(TimeSpan.FromMilliseconds(milliseconds))
 				.Subscribe(_ => {
-					IsRunning = false;
+					Stop();
 					completed?.Invoke();
 				});
 		}
@@ -205,7 +228,11 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="planes">S VPM Frame i Bitplanes uifgschplittet</param>
 		public void NextFrame(byte[][] planes)
 		{
-			_currentVpmFrame = planes;
+			if (IsRunning && AddPlanes) {
+				EnhanceFrame(planes);
+			} else {
+				Logger.Warn("[vni][{0}] Ignoring VPM frame (is running: {1}, add planes: {2}).", SwitchMode, IsRunning, AddPlanes);
+			}
 		}
 
 		/// <summary>
@@ -213,8 +240,15 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public void Stop()
 		{
+			if (TimingDeltas != null) {
+				Logger.Debug("[vni][{0}] Animation finished. Timing VPM vs animation (negative means VPM came earlier): [ {1}ms ].", SwitchMode, string.Join("ms, ", TimingDeltas));
+			}
+			_terminator?.Dispose();
 			_animation?.Dispose();
+			_frameIndex = 0;
+			_currentRender = null;
 			IsRunning = false;
+			TimingDeltas = null;
 		}
 
 		public bool Equals(Animation animation)
