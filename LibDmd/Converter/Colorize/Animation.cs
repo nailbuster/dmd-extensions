@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Windows.Media;
-using MonoLibUsb;
 using NLog;
 
 namespace LibDmd.Converter.Colorize
@@ -84,15 +82,16 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public bool IsRunning { get; private set; }
 
-		public int[] TimingDeltas;
-
 		private IObservable<AnimationFrame> _frames;
 		private Action<byte[][]> _currentRender;
 		private int _lastTick;
 		private IDisposable _animation;
 		private IDisposable _terminator;
+
+		/// <summary>
+		/// Index of the frame currently displaying (or enhancing).
+		/// </summary>
 		private int _frameIndex;
-		private int _deltaIndex;
 
 		#endregion
 
@@ -125,7 +124,7 @@ namespace LibDmd.Converter.Colorize
 		{
 			IsRunning = true;
 			SwitchMode = mode;
-			_frames = Frames.ToObservable().Delay(frame => Observable.Timer(TimeSpan.FromMilliseconds(frame.Time)));
+			_frameIndex = 0;
 			if (AddPlanes) {
 				StartEnhance(firstFrame, render, completed);
 			} else {
@@ -148,16 +147,14 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="completed">Wird uisgfiärt wenn fertig</param>
 		private void StartEnhance(byte[][] firstFrame, Action<byte[][]> render, Action completed = null)
 		{
-			_frameIndex = 0;
-			_deltaIndex = -1;
 			_currentRender = render;
-			TimingDeltas = new int[NumFrames];
 
 			if (NumFrames == 1) {
 				Logger.Info("[vni][{0}] Enhancing single frame, duration = {1}ms ({2})...", SwitchMode, Frames[0].Delay, Name);
 			} else {
 				Logger.Info("[vni][{0}] Starting enhanced animation of {1} frame{2} ({3})...", SwitchMode, NumFrames, NumFrames == 1 ? "" : "s", Name);
 			}
+			_lastTick = Environment.TickCount;
 			EnhanceFrame(firstFrame);
 			FinishIn(AnimationDuration, completed);
 		}
@@ -183,6 +180,7 @@ namespace LibDmd.Converter.Colorize
 				return;
 			}
 			Logger.Info("[vni][{0}] Starting colored gray4 animation of {1} frames ({2})...", SwitchMode, Frames.Length, Name);
+			_frames = Frames.ToObservable().Delay(frame => Observable.Timer(TimeSpan.FromMilliseconds(frame.Time)));
 			_animation = _frames
 				.Do(_ => _frameIndex++)
 				.Select(frame => frame.PlaneData)
@@ -195,19 +193,29 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="vpmFrame">S Biud wo erwiitered wird</param>
 		private void EnhanceFrame(byte[][] vpmFrame)
 		{
-			var vpmDelay = Environment.TickCount - _lastTick;
-			if (_deltaIndex >= 0 && _deltaIndex < NumFrames) {
-				TimingDeltas[_deltaIndex] = vpmDelay - (int)Frames[_deltaIndex].Delay;
-			}
-			_lastTick = Environment.TickCount;
-			_deltaIndex++;
+			var delay = Environment.TickCount - _lastTick;
 
-			if (_frameIndex >= NumFrames) {
-				Logger.Warn("[vni][{0}] Played all {1} frame(s) and now waiting last frame's duration to finish, but there is already a new VPM frame coming in. Ignoring.", SwitchMode, NumFrames);
+			if (vpmFrame.Length != 2) {
+				Logger.Warn("[vni][{0}] Cannot enhance frame containing {1} bitplanes.", SwitchMode, vpmFrame.Length);
 				return;
 			}
+
+			if (delay >= Frames[_frameIndex].Delay) {
+				_frameIndex++;
+				_lastTick = Environment.TickCount;
+			}
+
+			if (_frameIndex >= NumFrames) {
+				Logger.Error("[vni][{0}] No more frames in animation ({1}).", SwitchMode, NumFrames);
+				return;
+			}
+
+			if (Frames[_frameIndex].Planes.Count < 2) {
+				Logger.Warn("[vni][{0}] Cannot enhance frame with {1} additional bitplanes.", SwitchMode, Frames[_frameIndex].Planes.Count);
+				return;
+			}
+
 			_currentRender(new[] { vpmFrame[0], vpmFrame[1], Frames[_frameIndex].Planes[0].Plane, Frames[_frameIndex].Planes[1].Plane });
-			_frameIndex++;
 		}
 
 		/// <summary>
@@ -247,19 +255,11 @@ namespace LibDmd.Converter.Colorize
 		/// </summary>
 		public void Stop(string what = "stopped")
 		{
-			if (TimingDeltas != null) {
-				var vpmDelay = Environment.TickCount - _lastTick;
-				if (_deltaIndex < NumFrames) {
-					TimingDeltas[_deltaIndex] = vpmDelay - (int)Frames[_deltaIndex].Delay;
-				}
-				Logger.Debug("[vni][{0}] Animation {1}. Timing VPM vs animation (negative means VPM came earlier): [ {2}ms ].", SwitchMode, what, string.Join("ms, ", TimingDeltas));
-			}
 			_terminator?.Dispose();
 			_animation?.Dispose();
 			_frameIndex = 0;
 			_currentRender = null;
 			IsRunning = false;
-			TimingDeltas = null;
 		}
 
 		public bool Equals(Animation animation)
