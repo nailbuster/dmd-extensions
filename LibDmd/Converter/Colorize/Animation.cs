@@ -92,6 +92,7 @@ namespace LibDmd.Converter.Colorize
 		private IDisposable _animation;
 		private IDisposable _terminator;
 		private int _frameIndex;
+		private int _deltaIndex;
 
 		#endregion
 
@@ -148,11 +149,15 @@ namespace LibDmd.Converter.Colorize
 		private void StartEnhance(byte[][] firstFrame, Action<byte[][]> render, Action completed = null)
 		{
 			_frameIndex = 0;
-			_lastTick = Environment.TickCount;
+			_deltaIndex = -1;
 			_currentRender = render;
 			TimingDeltas = new int[NumFrames];
 
-			Logger.Info("[vni][{0}] Starting enhanced animation of {1} frame{2} ({3})...", SwitchMode, NumFrames, NumFrames == 1 ? "" : "s", Name);
+			if (NumFrames == 1) {
+				Logger.Info("[vni][{0}] Enhancing single frame, duration = {1}ms ({2})...", SwitchMode, Frames[0].Delay, Name);
+			} else {
+				Logger.Info("[vni][{0}] Starting enhanced animation of {1} frame{2} ({3})...", SwitchMode, NumFrames, NumFrames == 1 ? "" : "s", Name);
+			}
 			EnhanceFrame(firstFrame);
 			FinishIn(AnimationDuration, completed);
 		}
@@ -190,17 +195,19 @@ namespace LibDmd.Converter.Colorize
 		/// <param name="vpmFrame">S Biud wo erwiitered wird</param>
 		private void EnhanceFrame(byte[][] vpmFrame)
 		{
+			var vpmDelay = Environment.TickCount - _lastTick;
+			if (_deltaIndex >= 0 && _deltaIndex < NumFrames) {
+				TimingDeltas[_deltaIndex] = vpmDelay - (int)Frames[_deltaIndex].Delay;
+			}
+			_lastTick = Environment.TickCount;
+			_deltaIndex++;
+
 			if (_frameIndex >= NumFrames) {
-				_frameIndex++;
-				Logger.Warn("[vni][{0}] Got frame {1} of {2} to enhance and animation still running, ignoring", SwitchMode, _frameIndex, NumFrames);
+				Logger.Warn("[vni][{0}] Played all {1} frame(s) and now waiting last frame's duration to finish, but there is already a new VPM frame coming in. Ignoring.", SwitchMode, NumFrames);
 				return;
 			}
-
-			var vpmDelay = Environment.TickCount - _lastTick;
-			TimingDeltas[_frameIndex] = vpmDelay - (int)Frames[_frameIndex].Delay;
 			_currentRender(new[] { vpmFrame[0], vpmFrame[1], Frames[_frameIndex].Planes[0].Plane, Frames[_frameIndex].Planes[1].Plane });
 			_frameIndex++;
-			_lastTick = Environment.TickCount;
 		}
 
 		/// <summary>
@@ -216,7 +223,7 @@ namespace LibDmd.Converter.Colorize
 				.StartWith(Unit.Default)
 				.Delay(TimeSpan.FromMilliseconds(milliseconds))
 				.Subscribe(_ => {
-					Stop();
+					Stop("finished");
 					completed?.Invoke();
 				});
 		}
@@ -238,10 +245,14 @@ namespace LibDmd.Converter.Colorize
 		/// <summary>
 		/// Tuät d Animazion aahautä.
 		/// </summary>
-		public void Stop()
+		public void Stop(string what = "stopped")
 		{
 			if (TimingDeltas != null) {
-				Logger.Debug("[vni][{0}] Animation finished. Timing VPM vs animation (negative means VPM came earlier): [ {1}ms ].", SwitchMode, string.Join("ms, ", TimingDeltas));
+				var vpmDelay = Environment.TickCount - _lastTick;
+				if (_deltaIndex < NumFrames) {
+					TimingDeltas[_deltaIndex] = vpmDelay - (int)Frames[_deltaIndex].Delay;
+				}
+				Logger.Debug("[vni][{0}] Animation {1}. Timing VPM vs animation (negative means VPM came earlier): [ {2}ms ].", SwitchMode, what, string.Join("ms, ", TimingDeltas));
 			}
 			_terminator?.Dispose();
 			_animation?.Dispose();
