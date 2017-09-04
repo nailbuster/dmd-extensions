@@ -35,7 +35,7 @@ namespace PinMameDevice
 	/// Hiä isch d Haiptlogik fir d <c>DmdDevice.dll</c> fir VPinMAME.
 	/// </summary>
 	/// <seealso cref="DmdDevice">Vo det chemid d Datä übr VPinMAME</seealso>
-	public class DmdExt
+	public class DmdExt : IDmdDevice
 	{
 		private const int Width = 128;
 		private const int Height = 32;
@@ -225,7 +225,7 @@ namespace PinMameDevice
 				}
 			}
 			if (_config.Pin2Dmd.Enabled) {
-				var pin2Dmd = Pin2Dmd.GetInstance();
+				var pin2Dmd = LibDmd.Output.Pin2Dmd.Pin2Dmd.GetInstance();
 				if (pin2Dmd.IsAvailable) {
 					renderers.Add(pin2Dmd);
 					Logger.Info("Added PIN2DMD renderer.");					

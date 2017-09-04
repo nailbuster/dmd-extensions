@@ -69,6 +69,24 @@ namespace LibDmd.Common
 		}
 
 		/// <summary>
+		/// Puts an sequence of flat/concatenated bitplanes into an array.
+		/// </summary>
+		/// <param name="width">Width of the frame</param>
+		/// <param name="height">Height of the frame</param>
+		/// <param name="src">Concatenated bitplanes</param>
+		/// <returns></returns>
+		public static byte[][] SplitBitplanes(int width, int height, byte[] src)
+		{
+			var size = width * height / 8;
+			var bitlen = src.Length / size;
+			var planes = new byte[bitlen][];
+			for (var i = 0; i < bitlen; i++) {
+				planes[i] = src.Skip(i * size).Take(size).ToArray();
+			}
+			return planes;
+		}
+
+		/// <summary>
 		/// Splits an RGB24 frame into each bit plane.
 		/// </summary>
 		/// <param name="width">Width of the frame</param>
@@ -394,11 +412,14 @@ namespace LibDmd.Common
 		/// <param name="buffer2">Second buffer to compare</param>
 		/// <param name="offset2">Offset of second buffer</param>
 		/// <param name="count">Byte length to compare</param>
-		/// <returns></returns>
+		/// <returns>True if identical, false otherwise.</returns>
 		public static unsafe bool CompareBuffers(byte[] buffer1, int offset1, byte[] buffer2, int offset2, int count)
 		{
-			fixed (byte* b1 = buffer1, b2 = buffer2)
-			{
+			if (buffer1 == null || buffer2 == null) {
+				return false;
+			}
+
+			fixed (byte* b1 = buffer1, b2 = buffer2) {
 				return memcmp(b1 + offset1, b2 + offset2, count) == 0;
 			}
 		}

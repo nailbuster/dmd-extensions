@@ -120,9 +120,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AlphaNumeric.cs" />
+    <Compile Include="BinaryReaderExtensions.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="DmdDevice.cs" />
     <Compile Include="DmdExt.cs" />
+    <Compile Include="Pin2Dmd.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -143,7 +145,6 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets" Condition="Exists('../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets')" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -166,6 +167,7 @@ copy /Y "$(TargetDir)DmdDevice.log.config" "%25VPM_HOME%25"
 
 :done</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets" Condition="Exists('../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
