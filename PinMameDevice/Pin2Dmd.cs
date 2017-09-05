@@ -13,7 +13,7 @@ using NLog;
 
 namespace PinMameDevice
 {
-	public class Pin2Dmd/* : IDmdDevice*/
+	public class Pin2Dmd : IDmdDevice
 	{
 		
 		private bool _colorize;
@@ -329,7 +329,7 @@ namespace PinMameDevice
 			}
 			return af;
 		}
-		/*
+
 		private bool moveToNextFrame(FrameSeq af)
 		{
 			if (af != null && af.switchmode == SWITCH_MODE_FOLLOW && af.followMaskMatch) {
@@ -553,7 +553,6 @@ namespace PinMameDevice
 
 			}
 		}
-		*/
 
 		public void RenderAlphaNumeric(DmdDevice.NumericalLayout numericalLayout, ushort[] readUInt16Array, ushort[] ushorts)
 		{
