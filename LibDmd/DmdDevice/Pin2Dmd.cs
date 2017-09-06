@@ -11,7 +11,7 @@ using LibDmd.Common;
 using LibDmd.Converter.Colorize;
 using NLog;
 
-namespace PinMameDevice
+namespace LibDmd.DmdDevice
 {
 	public class Pin2Dmd : IDmdDevice
 	{
@@ -554,7 +554,7 @@ namespace PinMameDevice
 			}
 		}
 
-		public void RenderAlphaNumeric(DmdDevice.NumericalLayout numericalLayout, ushort[] readUInt16Array, ushort[] ushorts)
+		public void RenderAlphaNumeric(NumericalLayout numericalLayout, ushort[] readUInt16Array, ushort[] ushorts)
 		{
 			Logger.Warn("Ignoring alpha-numeric frame.");
 		}

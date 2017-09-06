@@ -1,15 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
 using IniParser;
 using IniParser.Model;
 using LibDmd.Input;
 using NLog;
 
-namespace PinMameDevice
+namespace LibDmd.DmdDevice
 {
 	public class Configuration
 	{

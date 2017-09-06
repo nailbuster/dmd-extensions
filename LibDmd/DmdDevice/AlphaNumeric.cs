@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PinMameDevice
+namespace LibDmd.DmdDevice
 {
 	public class AlphaNumeric
 	{
@@ -593,4 +588,23 @@ namespace PinMameDevice
 			return FrameBuffer;
 		}
 	}
+
+	public enum NumericalLayout
+		{
+			None,
+			__2x16Alpha,
+			__2x20Alpha,
+			__2x7Alpha_2x7Num,
+			__2x7Alpha_2x7Num_4x1Num,
+			__2x7Num_2x7Num_4x1Num,
+			__2x7Num_2x7Num_10x1Num,
+			__2x7Num_2x7Num_4x1Num_gen7,
+			__2x7Num10_2x7Num10_4x1Num,
+			__2x6Num_2x6Num_4x1Num,
+			__2x6Num10_2x6Num10_4x1Num,
+			__4x7Num10,
+			__6x4Num_4x1Num,
+			__2x7Num_4x1Num_1x16Alpha,
+			__1x16Alpha_1x16Num_1x7Num
+		}
 }

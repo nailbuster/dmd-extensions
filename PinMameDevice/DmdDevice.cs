@@ -3,39 +3,26 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using LibDmd.Common;
+using LibDmd.DmdDevice;
 using NLog;
+using RGiesecke.DllExport;
 
 namespace PinMameDevice
 {
-	public interface IDmdDevice
-	{
-		void Close();
-		void SetColorize(bool colorize);
-		void SetGameName(string gameName);
-		void SetColor(Color color);
-		void Init();
-		void LoadPalette(uint palIndex);
-		void SetPalette(Color[] colors);
-		void RenderRgb24(int width, int height, byte[] frame);
-		void RenderGray4(int width, int height, byte[] frame);
-		void RenderGray2(int width, int height, byte[] frame);
-		void RenderAlphaNumeric(DmdDevice.NumericalLayout numericalLayout, ushort[] readUInt16Array, ushort[] ushorts);
-	}
-
 	/// <summary>
 	/// Äs DLL womr cha ubr C/C++ inäladä und wo vo VPinMAME bruicht wird um DMD
 	/// datä z schickä. Drbi wird äs API implementiärt.
 	/// </summary>
 	/// <remarks>
 	/// Diä Klass beinhautet fasch kä Logik sondrn tuät fascht auäs diräkt a 
-	/// <see cref="DmdExt"/> weytrleitä.
+	/// <see cref="LibDmd.DmdDevice.DmdDevice"/> weytrleitä.
 	/// </remarks>
 	/// <see cref="https://sourceforge.net/p/pinmame/code/HEAD/tree/trunk/ext/dmddevice/dmddevice.h"/>
 	public static class DmdDevice
     {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		static readonly IDmdDevice _dmdExt = new DmdExt();
+		static readonly IDmdDevice _dmdDevice = new LibDmd.DmdDevice.Pin2Dmd();
 		static readonly LinkedList<char> CData = new LinkedList<char>();
 
 		// int Open()
@@ -52,7 +39,7 @@ namespace PinMameDevice
 		public static bool Close()
 		{
 			Logger.Info("[vpm] Close()");
-			_dmdExt.Close();
+			_dmdDevice.Close();
 			return true;
 		}
 
@@ -62,10 +49,10 @@ namespace PinMameDevice
 		{
 			var opt = (PMoptions) Marshal.PtrToStructure(options, typeof(PMoptions));
 			Logger.Info("[vpm] PM_GameSettings({0})", opt.Colorize);
-			_dmdExt.SetColorize(opt.Colorize != 0);
-			_dmdExt.SetGameName(gameName);
-			_dmdExt.SetColor(Color.FromRgb((byte)(opt.Red), (byte)(opt.Green), (byte)(opt.Blue)));
-			_dmdExt.Init();
+			_dmdDevice.SetColorize(opt.Colorize != 0);
+			_dmdDevice.SetGameName(gameName);
+			_dmdDevice.SetColor(Color.FromRgb((byte)(opt.Red), (byte)(opt.Green), (byte)(opt.Blue)));
+			_dmdDevice.Init();
 		}
 
 		// void Console_Data(UINT8 data)
@@ -87,7 +74,7 @@ namespace PinMameDevice
 			if (CData.First.Value == 'P') {
 				var num = new string(new[] { CData.First.Next.Value, CData.First.Next.Next.Value });
 				try {
-					_dmdExt.LoadPalette(Convert.ToUInt32(num, 16));
+					_dmdDevice.LoadPalette(Convert.ToUInt32(num, 16));
 				} catch (FormatException e) {
 					Logger.Warn(e, "Could not parse \"{0}\" as hex number.", num);
 				}
@@ -101,7 +88,7 @@ namespace PinMameDevice
 			var frameSize = width * height * 3;
 			var frame = new byte[frameSize];
 			Marshal.Copy(currbuffer, frame, 0, frameSize);
-			_dmdExt.RenderRgb24(width, height, frame);
+			_dmdDevice.RenderRgb24(width, height, frame);
 		}
 
 		// void Render_16_Shades(UINT16 width, UINT16 height, UINT8 *currbuffer) 
@@ -111,7 +98,7 @@ namespace PinMameDevice
 			var frameSize = width * height;
 			var frame = new byte[frameSize];
 			Marshal.Copy(currbuffer, frame, 0, frameSize);
-			_dmdExt.RenderGray4(width, height, frame);
+			_dmdDevice.RenderGray4(width, height, frame);
 		}
 
 		// void Render_4_Shades(UINT16 width, UINT16 height, UINT8 *currbuffer)
@@ -121,14 +108,14 @@ namespace PinMameDevice
 			var frameSize = width * height;
 			var frame = new byte[frameSize];
 			Marshal.Copy(currbuffer, frame, 0, frameSize);
-			_dmdExt.RenderGray2(width, height, frame);
+			_dmdDevice.RenderGray2(width, height, frame);
 		}
 
 		//  void Render_PM_Alphanumeric_Frame(NumericalLayout numericalLayout, const UINT16 *const seg_data, const UINT16 *const seg_data2) 
 		[DllExport("Render_PM_Alphanumeric_Frame", CallingConvention = CallingConvention.Cdecl)]
 		public static void RenderAlphaNum(NumericalLayout numericalLayout, IntPtr seg_data, IntPtr seg_data2)
 		{
-			_dmdExt.RenderAlphaNumeric(numericalLayout, InteropUtil.ReadUInt16Array(seg_data, 64), InteropUtil.ReadUInt16Array(seg_data2, 64));
+			_dmdDevice.RenderAlphaNumeric(numericalLayout, InteropUtil.ReadUInt16Array(seg_data, 64), InteropUtil.ReadUInt16Array(seg_data2, 64));
 		}
 
 		// void Set_4_Colors_Palette(Rgb24 color0, Rgb24 color33, Rgb24 color66, Rgb24 color100) 
@@ -136,7 +123,7 @@ namespace PinMameDevice
 		public static void SetGray2Palette(Rgb24 color0, Rgb24 color33, Rgb24 color66, Rgb24 color100)
 		{
 			Logger.Info("[vpm] Set_4_Colors_Palette()");
-			_dmdExt.SetPalette(new[] {
+			_dmdDevice.SetPalette(new[] {
 				ConvertColor(color0),
 				ConvertColor(color33),
 				ConvertColor(color66),
@@ -152,7 +139,7 @@ namespace PinMameDevice
 			var size = Marshal.SizeOf(typeof (Rgb24));
 
 			// for some shit reason, using a loop fails compilation.
-			_dmdExt.SetPalette(new[] {
+			_dmdDevice.SetPalette(new[] {
 				ConvertColor(GetColorAtPosition(palette, 0, size)),
 				ConvertColor(GetColorAtPosition(palette, 1, size)),
 				ConvertColor(GetColorAtPosition(palette, 2, size)),
@@ -206,25 +193,6 @@ namespace PinMameDevice
 			public char Red;
 			public char Green;
 			public char Blue;
-		}
-
-		public enum NumericalLayout
-		{
-			None,
-			__2x16Alpha,
-			__2x20Alpha,
-			__2x7Alpha_2x7Num,
-			__2x7Alpha_2x7Num_4x1Num,
-			__2x7Num_2x7Num_4x1Num,
-			__2x7Num_2x7Num_10x1Num,
-			__2x7Num_2x7Num_4x1Num_gen7,
-			__2x7Num10_2x7Num10_4x1Num,
-			__2x6Num_2x6Num_4x1Num,
-			__2x6Num10_2x6Num10_4x1Num,
-			__4x7Num10,
-			__6x4Num_4x1Num,
-			__2x7Num_4x1Num_1x16Alpha,
-			__1x16Alpha_1x16Num_1x7Num
 		}
     }
 }

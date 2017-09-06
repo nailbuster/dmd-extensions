@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LibDmd;
 using LibDmd.Common;
 using LibDmd.Converter;
 using LibDmd.Converter.Colorize;
@@ -18,7 +16,6 @@ using LibDmd.Input.PinMame;
 using LibDmd.Output;
 using LibDmd.Output.FileOutput;
 using LibDmd.Output.Network;
-using LibDmd.Output.Pin2Dmd;
 using LibDmd.Output.PinDmd1;
 using LibDmd.Output.PinDmd2;
 using LibDmd.Output.PinDmd3;
@@ -27,15 +24,14 @@ using Mindscape.Raygun4Net;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
-using static System.Windows.Threading.Dispatcher;
 
-namespace PinMameDevice
+namespace LibDmd.DmdDevice
 {
 	/// <summary>
 	/// Hiä isch d Haiptlogik fir d <c>DmdDevice.dll</c> fir VPinMAME.
 	/// </summary>
-	/// <seealso cref="DmdDevice">Vo det chemid d Datä übr VPinMAME</seealso>
-	public class DmdExt : IDmdDevice
+	/// <seealso cref="LibDmd.DmdDevice">Vo det chemid d Datä übr VPinMAME</seealso>
+	public class DmdDevice : IDmdDevice
 	{
 		private const int Width = 128;
 		private const int Height = 32;
@@ -67,7 +63,7 @@ namespace PinMameDevice
 			Layout = "${pad:padding=4:inner=[${threadid}]} ${date} ${pad:padding=5:inner=${level:uppercase=true}} | ${message} ${exception:format=ToString}"
 		};
 
-		public DmdExt()
+		public DmdDevice()
 		{
 			// setup logger
 			AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -183,14 +179,14 @@ namespace PinMameDevice
 				SetupGraphs();
 
 				// Create our context, and install it:
-				SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(CurrentDispatcher));
+				SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
 
 				// When the window closes, shut down the dispatcher
-				_dmd.Closed += (s, e) => CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
+				_dmd.Closed += (s, e) => Dispatcher.CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
 				_dmd.Dispatcher.Invoke(SetupVirtualDmd);
 
 				// Start the Dispatcher Processing
-				Run();
+				Dispatcher.Run();
 			});
 			thread.SetApartmentState(ApartmentState.STA);
 			thread.Start();
@@ -493,53 +489,53 @@ namespace PinMameDevice
 			_vpmRgb24Source.NextFrame(width, height, frame);
 		}
 
-		public void RenderAlphaNumeric(DmdDevice.NumericalLayout layout, ushort[] segData, ushort[] segDataExtended)
+		public void RenderAlphaNumeric(NumericalLayout layout, ushort[] segData, ushort[] segDataExtended)
 		{
 			//Logger.Info("Alphanumeric: {0}", layout);
 			switch(layout)
 			{
-				case DmdDevice.NumericalLayout.None:
+				case NumericalLayout.None:
 					break;
-				case DmdDevice.NumericalLayout.__2x16Alpha:
+				case NumericalLayout.__2x16Alpha:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x16Alpha(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x20Alpha:
+				case NumericalLayout.__2x20Alpha:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x20Alpha(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Alpha_2x7Num:
+				case NumericalLayout.__2x7Alpha_2x7Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Alpha_2x7Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Alpha_2x7Num_4x1Num:
+				case NumericalLayout.__2x7Alpha_2x7Num_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Alpha_2x7Num_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Num_2x7Num_4x1Num:
+				case NumericalLayout.__2x7Num_2x7Num_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Num_2x7Num_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Num_2x7Num_10x1Num:
+				case NumericalLayout.__2x7Num_2x7Num_10x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Num_2x7Num_10x1Num(segData, segDataExtended));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Num_2x7Num_4x1Num_gen7:
+				case NumericalLayout.__2x7Num_2x7Num_4x1Num_gen7:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Num_2x7Num_4x1Num_gen7(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Num10_2x7Num10_4x1Num:
+				case NumericalLayout.__2x7Num10_2x7Num10_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Num10_2x7Num10_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x6Num_2x6Num_4x1Num:
+				case NumericalLayout.__2x6Num_2x6Num_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x6Num_2x6Num_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x6Num10_2x6Num10_4x1Num:
+				case NumericalLayout.__2x6Num10_2x6Num10_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x6Num10_2x6Num10_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__4x7Num10:
+				case NumericalLayout.__4x7Num10:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render4x7Num10(segData));
 					break;
-				case DmdDevice.NumericalLayout.__6x4Num_4x1Num:
+				case NumericalLayout.__6x4Num_4x1Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render6x4Num_4x1Num(segData));
 					break;
-				case DmdDevice.NumericalLayout.__2x7Num_4x1Num_1x16Alpha:
+				case NumericalLayout.__2x7Num_4x1Num_1x16Alpha:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render2x7Num_4x1Num_1x16Alpha(segData));
 					break;
-				case DmdDevice.NumericalLayout.__1x16Alpha_1x16Num_1x7Num:
+				case NumericalLayout.__1x16Alpha_1x16Num_1x7Num:
 					_vpmGray2Source.NextFrame(Width, Height, AlphaNumeric.Render1x16Alpha_1x16Num_1x7Num(segData));
 					break;
 				default:
