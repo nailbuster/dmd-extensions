@@ -3,21 +3,36 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Subjects;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows.Media;
+using System.Windows.Threading;
 using LibDmd.Common;
 using LibDmd.Converter.Colorize;
+using LibDmd.Input;
+using LibDmd.Output;
+using LibDmd.Output.FileOutput;
+using LibDmd.Output.Network;
+using LibDmd.Output.PinDmd1;
+using LibDmd.Output.PinDmd2;
+using LibDmd.Output.PinDmd3;
+using Microsoft.Win32;
 using NLog;
 
 namespace LibDmd.DmdDevice
 {
 	public class Pin2Dmd : IDmdDevice
 	{
+
+		private VirtualDmd _dmd;
 		
 		private bool _colorize;
 		private string _gameName;
+		private Pin2DmdSource _source = new Pin2DmdSource();
 
 		//endpoints for communication
 		private const byte EP_IN = 0x81;
@@ -455,11 +470,6 @@ namespace LibDmd.DmdDevice
 			}
 		}
 
-		public void Init()
-		{
-
-		}
-
 		public void LoadPalette(uint palIndex)
 		{
 			if (coloring.Palettes.Length < palIndex && coloring.Palettes[palIndex].Colors.Count() == 16) {
@@ -590,9 +600,9 @@ namespace LibDmd.DmdDevice
 			}
 		}
 
-		private static void RenderBuffer()
+		private void RenderBuffer()
 		{
-			Logger.Info("Rendering buffer.");
+			_source.RenderFrame(new Tuple<byte[][], Color[]>(outbuffer, CurrentPalette));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -605,6 +615,63 @@ namespace LibDmd.DmdDevice
 			public int Red66, Green66, Blue66;
 			public int Red33, Green33, Blue33;
 			public int Red0, Green0, Blue0;
+		}
+
+
+		public void Init()
+		{
+			if (_dmd == null) {
+					Logger.Info("Opening virtual DMD...");
+					CreateVirtualDmd();
+
+				} else {
+					_dmd.Dispatcher.Invoke(() => {
+						SetupGraphs();
+						SetupVirtualDmd();
+					});
+				}
+		}
+
+
+		private void CreateVirtualDmd()
+		{
+			var thread = new Thread(() => {
+
+				_dmd = new VirtualDmd();
+				SetupGraphs();
+
+				// Create our context, and install it:
+				SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+
+				// When the window closes, shut down the dispatcher
+				_dmd.Closed += (s, e) => Dispatcher.CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
+				_dmd.Dispatcher.Invoke(SetupVirtualDmd);
+
+				// Start the Dispatcher Processing
+				Dispatcher.Run();
+			});
+			thread.SetApartmentState(ApartmentState.STA);
+			thread.Start();
+		}
+
+		private void SetupGraphs()
+		{
+			var graph = new RenderGraph {
+					Name = "2-bit Colored VPM Graph",
+					Source = _source,
+					Destinations = new List<IDestination> {_dmd.Dmd},
+				};
+			graph.Init();
+			graph.StartRendering();
+		}
+
+		/// <summary>
+		/// Sets the virtual DMD's parameters, initializes it and shows it.
+		/// </summary>
+		private void SetupVirtualDmd()
+		{
+			_dmd.Dmd.Init();
+			_dmd.Show();
 		}
 		
 		private static string GetColorPath()
@@ -720,6 +787,22 @@ namespace LibDmd.DmdDevice
 				default:
 					throw new ArgumentOutOfRangeException(nameof(switchMode), switchMode, null);
 			}
+		}
+	}
+
+	internal class Pin2DmdSource : AbstractSource, IColoredGray4Source
+	{
+		public override string Name { get; } = "Pin2Dmd";
+		public IObservable<Unit> OnResume { get; }
+		public IObservable<Unit> OnPause { get; }
+		private readonly Subject<Tuple<byte[][], Color[]>> _frames = new Subject<Tuple<byte[][], Color[]>>();
+		public IObservable<Tuple<byte[][], Color[]>> GetColoredGray4Frames()
+		{
+			return _frames;
+		}
+		public void RenderFrame(Tuple<byte[][], Color[]> frame)
+		{
+			_frames.OnNext(frame);
 		}
 	}
 

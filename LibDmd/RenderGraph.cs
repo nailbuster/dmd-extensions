@@ -449,8 +449,8 @@ namespace LibDmd
 				}
 
 				// log status
-				Source.OnResume.Subscribe(x => { Logger.Info("Frames coming in from {0}.", Source.Name); });
-				Source.OnPause.Subscribe(x => {
+				Source.OnResume?.Subscribe(x => { Logger.Info("Frames coming in from {0}.", Source.Name); });
+				Source.OnPause?.Subscribe(x => {
 					Logger.Info("Frames stopped from {0}.", Source.Name);
 					onCompleted?.Invoke();
 				});
