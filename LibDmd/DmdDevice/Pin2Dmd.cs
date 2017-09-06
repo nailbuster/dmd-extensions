@@ -58,7 +58,12 @@ namespace LibDmd.DmdDevice
 		private FrameSeq actFrame;
 
 		private Color[] Palette4Bit;
-		
+
+		public Pin2Dmd()
+		{
+			AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+		}
+
 		private ushort readShort(BinaryReader reader)
 		{
 			var p = reader.ReadBytes(2);
@@ -699,6 +704,14 @@ namespace LibDmd.DmdDevice
 			[Out] StringBuilder lpFilename,
 			[In][MarshalAs(UnmanagedType.U4)] int nSize
 		);
+
+		private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+		{
+			var ex = e.ExceptionObject as Exception;
+			if (ex != null) {
+				Logger.Error(ex.ToString());
+			}
+		}
     }
 
 	class FrameSeq
