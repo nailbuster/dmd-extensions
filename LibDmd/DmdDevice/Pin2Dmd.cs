@@ -35,7 +35,6 @@ namespace LibDmd.DmdDevice
 		private byte[] ConsoleInput = new byte[2];
 
 		private Coloring coloring;
-		private byte[][] maskbuf = new byte[10][];
 		private byte[][] outbuffer;
 		private byte[][] animbuf;
 
@@ -57,7 +56,7 @@ namespace LibDmd.DmdDevice
 		private List<PalMapping> listOfMappings;
 		private FrameSeq actFrame;
 
-		private Color[] Palette4Bit;
+		private Color[] CurrentPalette;
 
 		public Pin2Dmd()
 		{
@@ -212,25 +211,9 @@ namespace LibDmd.DmdDevice
 				Timer = 0;
 		}
 		
-		private void addMapping(uint crc32, byte switchmode, ushort palIndex, uint durationInMillis)
+		private Mapping lookupMapping(uint[] crc32)
 		{
-			PalMapping pPalMapping = new PalMapping();
-			pPalMapping.crc32 = crc32;
-			pPalMapping.switchmode = switchmode;
-			pPalMapping.palIndex = palIndex;
-			pPalMapping.durationInMillis = durationInMillis;
-			listOfMappings.Add(pPalMapping);
-		}
-
-		private void deleteAllMappings()
-		{
-			listOfMappings.Clear();
-		}
-
-
-		private PalMapping lookupMapping(uint[] crc32)
-		{
-			return listOfMappings.FirstOrDefault(m => crc32.Contains(m.crc32));
+			return coloring.Mappings.FirstOrDefault(m => crc32.Contains(m.Checksum));
 		}
 
 		
@@ -254,6 +237,9 @@ namespace LibDmd.DmdDevice
 
 		private uint calculate_crc32_mask(byte[] input, byte[] mask)
 		{
+			if (mask == null) {
+				return 0;
+			}
 			var maskedPlane = new byte[512];
 			var plane = new BitArray(input);
 			plane.And(new BitArray(mask)).CopyTo(maskedPlane, 0);
@@ -277,9 +263,12 @@ namespace LibDmd.DmdDevice
 				
 		private FrameSeq searchKeyFrame(FrameSeq af, byte[][] displaybuf, int numberOfPlanesToSearch)
 		{
-
 			uint[] crc32 = new uint[12]; // max 10 masks and one without
 			uint follow_crc32;
+
+			if (coloring == null) {
+				return null;
+			}
 
 			for (int i = 0; i < numberOfPlanesToSearch; i++) {
 
@@ -297,35 +286,36 @@ namespace LibDmd.DmdDevice
 				}
 
 				crc32[0] = calculate_crc32(displaybuf[i]);
-				for (int j = 0; j < 10; j++)
-					crc32[j + 1] = calculate_crc32_mask(displaybuf[i], maskbuf[j]);
+				for (int j = 0; j < coloring.Masks.Length; j++)
+					crc32[j + 1] = calculate_crc32_mask(displaybuf[i], coloring.Masks[i]);
 
 				var pPalMapping = lookupMapping(crc32);
 				if (pPalMapping == null) {
 					continue;
 				}
-				switch (pPalMapping.switchmode) {
+				var switchMode = GetSwitchMode(pPalMapping.Mode);
+				switch (switchMode) {
 					case SWITCH_MODE_REPL:
 					case SWITCH_MODE_COLMASK:
 					case SWITCH_MODE_FOLLOW:
 						if (af != null) {
 							Timer = 0;
 						}
-						af = read_replacement_frame_start(pPalMapping.durationInMillis, pPalMapping.switchmode);
-						af.addPlanes = (pPalMapping.switchmode == SWITCH_MODE_FOLLOW || pPalMapping.switchmode == SWITCH_MODE_COLMASK);
-						nextPalette = pPalMapping.palIndex;
+						af = read_replacement_frame_start(pPalMapping.Offset, switchMode);
+						af.addPlanes = (switchMode == SWITCH_MODE_FOLLOW || switchMode == SWITCH_MODE_COLMASK);
+						nextPalette = pPalMapping.PaletteIndex;
 						break;
 					case SWITCH_MODE_PAL:
 						if (af != null) {
 							af = read_replacement_frame_end();
 							Timer = 0;
 						}
-						if (pPalMapping.durationInMillis != 0) {
-							Timer = pPalMapping.durationInMillis;
+						if (pPalMapping.Duration != 0) {
+							Timer = pPalMapping.Duration;
 							nextPalette = defaultPalette;
-							activePalette = pPalMapping.palIndex;
+							activePalette = pPalMapping.PaletteIndex;
 						} else
-							nextPalette = pPalMapping.palIndex;
+							nextPalette = pPalMapping.PaletteIndex;
 						break;
 					case SWITCH_MODE_EVENT:
 						break;
@@ -387,6 +377,7 @@ namespace LibDmd.DmdDevice
 		private void LoadPalette(string fileName)
 		{
 			coloring = new Coloring(fileName);
+			vni_file = coloring.Version == 0x02;
 		}
 
 
@@ -407,8 +398,9 @@ namespace LibDmd.DmdDevice
 
 		public void SetColor(Color color)
 		{
-			if (_colorize) {
-				Palette4Bit = new Color[16];
+			if (!_colorize) {
+
+				CurrentPalette = new Color[16];
 				double R = 0, G = 0, B = 0;
 				int i, r, g, b = 0;
 				if (color.R > 0)
@@ -427,7 +419,7 @@ namespace LibDmd.DmdDevice
 						g = 255;
 					if (b > 255)
 						b = 255;
-					Palette4Bit[i] = new Color { R = (byte)r, B = (byte)b, G = (byte)g };
+					CurrentPalette[i] = new Color { R = (byte)r, B = (byte)b, G = (byte)g };
 				}
 
 			} else {
@@ -449,6 +441,10 @@ namespace LibDmd.DmdDevice
 					Logger.Warn("No palette file found at {0}, no coloring.", palPath);
 				}
 
+				if (FSQfile == null) {
+					return;
+				}
+
 				if (!vni_file) {
 					if (Encoding.Default.GetString(FSQfile.ReadBytes(4)) == "FSQ ") {
 						fsq_version = FSQfile.ReadByte();
@@ -467,7 +463,7 @@ namespace LibDmd.DmdDevice
 		public void LoadPalette(uint palIndex)
 		{
 			if (coloring.Palettes.Length < palIndex && coloring.Palettes[palIndex].Colors.Count() == 16) {
-				Palette4Bit = coloring.Palettes[palIndex].Colors;
+				CurrentPalette = coloring.Palettes[palIndex].Colors;
 			} else {
 				Logger.Warn("Cannot load palette {0} through console.", palIndex);
 			}
@@ -561,14 +557,13 @@ namespace LibDmd.DmdDevice
 
 		public void RenderAlphaNumeric(NumericalLayout numericalLayout, ushort[] readUInt16Array, ushort[] ushorts)
 		{
-			Logger.Warn("Ignoring alpha-numeric frame.");
 		}
 		
 
 		public void SetPalette(Color[] colors)
 		{
 			if (colors.Length == 4) {
-				Palette4Bit = new[] {
+				CurrentPalette = new[] {
 				colors[0],
 				colors[1],
 				new Color { R = 0x22, G = 0x0, B = 0x0 },
@@ -588,7 +583,7 @@ namespace LibDmd.DmdDevice
 			};
 
 			} else if (colors.Length == 16) {
-				Palette4Bit = colors;
+				CurrentPalette = colors;
 
 			} else {
 				Logger.Warn("Not setting {0}-color palette.");
@@ -712,29 +707,42 @@ namespace LibDmd.DmdDevice
 				Logger.Error(ex.ToString());
 			}
 		}
-    }
 
-	class FrameSeq
+		private byte GetSwitchMode(SwitchMode switchMode)
+		{
+			switch (switchMode)
+			{
+				case SwitchMode.Palette: return SWITCH_MODE_PAL;
+				case SwitchMode.Replace: return SWITCH_MODE_REPL;
+				case SwitchMode.ColorMask: return SWITCH_MODE_COLMASK;
+				case SwitchMode.Event: return SWITCH_MODE_EVENT;
+				case SwitchMode.Follow: return SWITCH_MODE_FOLLOW;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(switchMode), switchMode, null);
+			}
+		}
+	}
+
+	internal class FrameSeq
 	{
-		internal int numberOfFrames;     // number of frames contained in this sequence
-		internal int actFrame;           // act number of frame that is displayed
-		internal uint offset;        // offset of sequence in file
-		internal uint delay;         // delay in ms for act frame
-		internal int numberOfPlanes;     // number of planes used when replaying replacement frames
-		internal bool newFrame;          // set when new frame to display was loaded
-		internal bool addPlanes;         // set to true, if planes should be added instead of being replaced
-		internal uint crc32;         // next hash to look for (in col seq mode)
-		internal byte[] mask;      // mask
+		internal int numberOfFrames; // number of frames contained in this sequence
+		internal int actFrame; // act number of frame that is displayed
+		internal uint offset; // offset of sequence in file
+		internal uint delay; // delay in ms for act frame
+		internal int numberOfPlanes; // number of planes used when replaying replacement frames
+		internal bool newFrame; // set when new frame to display was loaded
+		internal bool addPlanes; // set to true, if planes should be added instead of being replaced
+		internal uint crc32; // next hash to look for (in col seq mode)
+		internal byte[] mask; // mask
 		internal byte switchmode;
 		internal bool followMaskMatch;
 	}
 
-	class PalMapping
+	internal class PalMapping
 	{
 		internal uint crc32;
 		internal byte switchmode;
 		internal ushort palIndex;
 		internal uint durationInMillis;
 	}
-
 }
