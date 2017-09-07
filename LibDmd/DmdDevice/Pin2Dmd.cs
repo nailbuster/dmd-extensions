@@ -99,6 +99,7 @@ namespace LibDmd.DmdDevice
 		}
 		private FrameSeq read_replacement_frame_start(uint offset, byte switchmode)
 		{
+			Logger.Debug("[read_replacement_frame_start] at offset {0} and switch mode {1}", offset, switchmode);
 			var frameSeq = new FrameSeq {
 				offset = offset,
 				switchmode = switchmode
@@ -106,11 +107,12 @@ namespace LibDmd.DmdDevice
 
 			FSQfile.BaseStream.Seek(frameSeq.offset, SeekOrigin.Begin);
 			if (!vni_file) {
-				frameSeq.numberOfFrames = FSQfile.ReadInt16BE();
+				frameSeq.numberOfFrames = readShort(FSQfile);
 			} else {
-				ushort tmp16 = FSQfile.ReadUInt16(); //size of scene name
+				ushort tmp16 = readShort(FSQfile); //size of scene name
 				FSQfile.BaseStream.Seek(offset + tmp16 + 18, SeekOrigin.Begin); //skip scene name + unneeded data
-				frameSeq.numberOfFrames = FSQfile.ReadInt16BE();
+				frameSeq.numberOfFrames = readShort(FSQfile);
+				Logger.Debug("[read_replacement_frame_start] Animation has {0} frames.", frameSeq.numberOfFrames);
 				//fread(buf, 1, 5, FSQfile);
 				//fread(buf, 1, 2, FSQfile); //width
 				//fread(buf, 1, 2, FSQfile); //height
@@ -165,14 +167,18 @@ namespace LibDmd.DmdDevice
 
 				FSQfile.ReadByte(); // skip (compressed flag)
 
+				Logger.Trace("[read_replacement_frame_next] Reading {0} planes at {1} bytes from file...", frameSeq.numberOfPlanes, planeSize);
 				for (int i = 0; i < frameSeq.numberOfPlanes; i++) {
 					var marker = FSQfile.ReadByte(); // plane number
 					if (marker == 0x6D) { // mask
 						frameSeq.mask = FSQfile.ReadBytes(planeSize);
 
 					} else {
-						if (planeSize == 512)
+						if (planeSize == 512) {
 							planes[i] = FSQfile.ReadBytes(planeSize);
+						} else {
+							Logger.Warn("[read_replacement_frame_next] Plane size expected {0} but it's {1}", 512, planeSize);
+						}
 					}
 				}
 
@@ -211,6 +217,7 @@ namespace LibDmd.DmdDevice
 	
 		private FrameSeq read_replacement_frame_end()
 		{
+			Logger.Debug("[read_replacement_frame_end]");
 			return null;
 		}
 							
@@ -230,8 +237,6 @@ namespace LibDmd.DmdDevice
 		{
 			return coloring.Mappings.FirstOrDefault(m => crc32.Contains(m.Checksum));
 		}
-
-		
 
 		private uint calculate_crc32(byte[] input)
 		{
@@ -265,7 +270,9 @@ namespace LibDmd.DmdDevice
 		{
 			if (palNumber == activePalette)
 				return;
-			Logger.Info("Switching to palette {0}", palNumber);
+			activePalette = palNumber;
+			Logger.Info("[switchPalette] Switching to palette {0}", palNumber);
+			CurrentPalette = coloring.Palettes[palNumber].Colors;
 		}
 
 		private void doReplay(FrameSeq actFrame)
@@ -308,6 +315,7 @@ namespace LibDmd.DmdDevice
 				if (pPalMapping == null) {
 					continue;
 				}
+				Logger.Debug("[searchKeyFrame] Mapping found!");
 				var switchMode = GetSwitchMode(pPalMapping.Mode);
 				switch (switchMode) {
 					case SWITCH_MODE_REPL:
@@ -326,8 +334,9 @@ namespace LibDmd.DmdDevice
 							Timer = 0;
 						}
 						if (pPalMapping.Duration != 0) {
+							Logger.Debug("[searchKeyFrame] Palette active for {0}ms.", pPalMapping.Duration);
 							Timer = pPalMapping.Duration;
-							nextPalette = defaultPalette;
+							nextPalette = (ushort) coloring.DefaultPalette.Index;
 							activePalette = pPalMapping.PaletteIndex;
 						} else
 							nextPalette = pPalMapping.PaletteIndex;
@@ -364,7 +373,7 @@ namespace LibDmd.DmdDevice
 						Timer = af.delay;
 					} else {
 						af = read_replacement_frame_end();
-						nextPalette = defaultPalette;
+						nextPalette = (ushort) coloring.DefaultPalette.Index;
 					}
 				}
 				switchPalette(nextPalette);
@@ -375,12 +384,12 @@ namespace LibDmd.DmdDevice
 
 		private void Send_Clear_Settings()
 		{
-			Logger.Info("Clearing settings.");
+			Logger.Info("[Send_Clear_Settings]");
 		}
 
 		private void Send_Clear_Screen()
 		{
-			Logger.Info("Clearing screen.");
+			Logger.Info("[Send_Clear_Screen]");
 		}
 
 		private bool Check_Version()
@@ -393,6 +402,8 @@ namespace LibDmd.DmdDevice
 		{
 			coloring = new Coloring(fileName);
 			vni_file = coloring.Version == 0x02;
+			CurrentPalette = coloring.DefaultPalette.Colors;
+			Logger.Debug("[LoadPalette] Loaded .pal file, default palette = {0}", coloring.DefaultPalette.Index);
 		}
 
 
@@ -546,6 +557,7 @@ namespace LibDmd.DmdDevice
 				if (actFrame != null) {
 					if (actFrame.addPlanes) {
 
+						Logger.Debug("[RenderGray2] Adding 2 bytes to frame...");
 						outbuffer[1] = outbuffer[2];
 						outbuffer[2] = animbuf[0];
 						outbuffer[3] = animbuf[1];
@@ -555,6 +567,7 @@ namespace LibDmd.DmdDevice
 						actFrame.newFrame = false;
 
 					} else {
+						Logger.Debug("[RenderGray2] Replacing frame...");
 						outbuffer = animbuf;
 						doReplay(actFrame);
 					}

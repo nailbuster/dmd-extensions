@@ -83,6 +83,7 @@ namespace LibDmd.Common
 			for (var i = 0; i < bitlen; i++) {
 				planes[i] = src.Skip(i * size).Take(size).ToArray();
 			}
+			Logger.Debug("[SplitBitplanes] From {0} bytes to {1} planes at {2} bytes.", src.Length, bitlen, size);
 			return planes;
 		}
 
