@@ -367,7 +367,7 @@ namespace LibDmd.DmdDevice
 					if (af.actFrame < af.numberOfFrames) {
 
 						animbuf = read_replacement_frame_next(af);
-						Logger.Debug("Animation frame read ({0}).", af.addPlanes);
+						Logger.Debug("[checkEndOfPalSwitchOrReplay] Animation frame read, duration = {0}ms, bitlength = {1} ({2}).", af.delay, animbuf.Length, af.addPlanes);
 
 						af.newFrame = true;          // mark new frame to recreate rgb output buffer
 						Timer = af.delay;
