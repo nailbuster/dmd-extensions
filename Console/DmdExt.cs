@@ -106,7 +106,13 @@ namespace DmdExt
 				var renderer = _command.GetRenderGraph();
 
 				if (baseOptions.SaveToFile != null) {
-					(renderer as RenderGraph)?.Destinations.Add(new BitmapOutput(baseOptions.SaveToFile));
+                    //PINUP   use the -o PINUP to initialize PinUP DLL output for pinball fx2/3 support types
+                    if (baseOptions.SaveToFile.ToUpper() == "PINUP")
+                    {
+                        (renderer as RenderGraph)?.Destinations.Add(new PinUPOutput("BITMAP"));
+                    }
+                    else
+                        (renderer as RenderGraph)?.Destinations.Add(new BitmapOutput(baseOptions.SaveToFile));
 				}
 
 				_command.Execute(() => {
