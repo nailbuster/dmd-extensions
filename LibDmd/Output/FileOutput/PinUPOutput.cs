@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows;
+using System.Windows.Threading;
 using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using NLog;
 using System.Runtime.InteropServices;
@@ -13,16 +15,19 @@ using System.Text;
 namespace LibDmd.Output.FileOutput
 {
 
-	public class PinUPOutput : IBitmapDestination,IRgb24Destination
+	public class PinUPOutput : IBitmapDestination,IRgb24Destination, IFixedSizeDestination
     {
 		public string OutputFolder { get; set; }
 
 		public string Name { get; } = "PinUP Writer";
 		public bool IsAvailable { get; } = true;
-        public readonly int Width = 128;
-        public readonly int Height = 32;
-        public readonly uint Fps;
-        
+        public int Width = 128;
+        public int Height = 32;
+        public uint Fps;
+
+        public int DmdWidth { get; private set; } = 128;
+        public int DmdHeight { get; private set; } = 32;
+
         [DllImport(@"dmddevicePUP.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void Render_RGB24(ushort width, ushort height, IntPtr currbuffer);
         [DllImport(@"dmddevicePUP.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -37,25 +42,34 @@ namespace LibDmd.Output.FileOutput
 
 
         private IntPtr pnt;
+        private String _gameName;
 
         public PinUPOutput(string RomName)
         {
             // throw new InvalidFolderException("PINUP ERROR?......");
-            Logger.Info("PinUP DLL Starting....");   
+            Logger.Info("PinUP DLL Starting...." + RomName);   
             Open();
 
             pnt = System.Runtime.InteropServices.Marshal.AllocHGlobal(Width * Height * 3);    //make a global memory pnt for DLL call
 
-            Marshal.Copy(Encoding.ASCII.GetBytes(RomName), 0, pnt, RomName.Length);   //convert to bytes to make DLL call work?
+            _gameName = RomName;
 
-            SetGameName(pnt, RomName.Length);  //external PUP dll call
+            Marshal.Copy(Encoding.ASCII.GetBytes(_gameName), 0, pnt, _gameName.Length);   //convert to bytes to make DLL call work?
+
+            SetGameName(pnt, _gameName.Length);  //external PUP dll call
 
 
         }
 
 		public void Init()
 		{
-           // throw new InvalidFolderException("iniiintiting");
+            // throw new InvalidFolderException("iniiintiting");
+            if (this is IFixedSizeDestination)
+            {
+                //SetDimensions(DmdWidth, DmdHeight);
+            }
+
+
         }
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -65,10 +79,12 @@ namespace LibDmd.Output.FileOutput
 		{
             var bytesPerPixel = (bmp.Format.BitsPerPixel + 7) / 8;
             var bytes = new byte[bytesPerPixel * bmp.PixelWidth * bmp.PixelHeight];
-            var rect = new Int32Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight);
+            var rect = new Int32Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight);            
+
             bmp.CopyPixels(rect, bytes, bmp.PixelWidth * bytesPerPixel, 0);
 
-            RenderRgb24(bytes); 
+            RenderRgb24(bytes);             
+
         }
 
 		public void Dispose()
@@ -85,12 +101,15 @@ namespace LibDmd.Output.FileOutput
 
 
         public void RenderRgb24(byte[] frame)
-        {           
-         
+        {
+
             // Copy the fram array to unmanaged memory.
-            
-            Marshal.Copy(frame, 0, pnt, Width * Height * 3);
-            Render_RGB24((ushort) Width, (ushort) Height, pnt);
+
+            //     Marshal.Copy(frame, 0, pnt, Width * Height * 3);    //crash with 128x16 so try something else
+            //     Render_RGB24((ushort) Width, (ushort) Height, pnt);
+            Marshal.Copy(frame, 0, pnt, DmdWidth * DmdHeight * 3);
+            Render_RGB24((ushort) DmdWidth, (ushort) DmdHeight, pnt);
+
 
         }
 
